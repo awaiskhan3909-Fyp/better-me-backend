@@ -1,0 +1,62 @@
+{
+  "distortion": "Overgeneralization",
+  "description": "A cognitive distortion in which an individual draws sweeping, universal conclusions from a single event or limited experience. Words like 'always,' 'never,' 'everyone,' and 'nothing ever works out' are hallmarks of this pattern. It transforms isolated incidents into perceived permanent truths about oneself, others, or the world.",
+  "templates": [
+    {
+      "id": 1,
+      "title": "One Failure Becomes a Universal Truth",
+      "explanation": "Overgeneralization often begins with a single failure or setback that the mind rapidly converts into an absolute rule about the future — 'I failed this time, therefore I always fail.' This leap from one data point to a sweeping conclusion bypasses the vast evidence of past successes, neutral outcomes, and variable circumstances. The result is a distorted self-narrative built on an unrepresentative sample of experience.",
+      "reflection_question": "Is this single experience genuinely representative of every similar situation you have ever faced, or is it one moment among many — some of which had different, better outcomes? What evidence exists that contradicts the 'always' or 'never' in your thought?",
+      "balanced_reframe": "One outcome — however painful — is a data point, not a destiny. The fact that something did not work in this instance says nothing definitive about your capacity, your worth, or what the future holds. Patterns require far more evidence than a single event to be considered reliable.",
+      "behavioral_action": "Write down the overgeneralized thought (e.g., 'I always mess things up'). Then list three specific past examples that contradict it. Keep this list and add to it whenever the thought returns, building a growing body of counter-evidence."
+    },
+    {
+      "id": 2,
+      "title": "Rejection as Proof of Universal Unlovability",
+      "explanation": "Interpersonal rejection is among the most fertile ground for overgeneralization. A single instance of rejection — romantic, social, or professional — can be rapidly transformed into the belief that one is fundamentally unwanted, unlikeable, or unworthy of connection. This leap ignores the specific context of the rejection, the other person's circumstances, and the many existing or potential relationships that tell a different story.",
+      "reflection_question": "Does this one person's response — shaped by their own history, preferences, and circumstances — truly reflect how all people perceive you or how all future relationships will unfold? What relationships in your life already contradict this sweeping conclusion?",
+      "balanced_reframe": "Rejection is a universal human experience that speaks as much to compatibility, timing, and context as it does to inherent worth. One person's response cannot define your value to all people in all situations. Connection is not an all-or-nothing proposition — and one closed door does not seal all others.",
+      "behavioral_action": "Identify one relationship — a friendship, family bond, or collegial connection — where you feel genuinely accepted. Reflect on what that relationship tells you about your capacity for connection, and let it serve as a counterweight to the overgeneralized belief."
+    },
+    {
+      "id": 3,
+      "title": "'Nothing Ever Works Out for Me'",
+      "explanation": "This pervasive form of overgeneralization involves scanning one's life through a filter that confirms a narrative of consistent failure or bad luck, while discounting or ignoring neutral and positive outcomes. Known in CBT as a 'mental filter,' it works in tandem with overgeneralization to create a skewed autobiographical story. The belief feels deeply true precisely because the mind selectively recalls evidence that confirms it.",
+      "reflection_question": "If you were to honestly audit the last month, year, or decade of your life — including small wins, moments of connection, and problems that resolved — would the evidence genuinely support 'nothing ever works out,' or does that statement require ignoring a significant portion of your experience?",
+      "balanced_reframe": "The mind under stress gravitates toward confirming its fears rather than accurately surveying reality. 'Nothing ever works out' is an emotional truth — a reflection of how things feel right now — not an objective account of your history. A fuller, more balanced inventory almost always reveals a more mixed and hopeful picture.",
+      "behavioral_action": "Create a brief 'evidence audit': divide a page into two columns — 'Things that did not go as hoped' and 'Things that worked out, even partially.' Complete both columns honestly and compare. Notice what the full picture reveals."
+    },
+    {
+      "id": 4,
+      "title": "Labeling the Self from a Single Behavior",
+      "explanation": "Overgeneralization frequently collapses into self-labeling — moving from 'I did something thoughtless' to 'I am a thoughtless person,' or from 'I struggled with this task' to 'I am incompetent.' This shift from behavior to identity is a critical escalation: behaviors are specific and changeable, while labels feel fixed and total. The label then becomes a lens through which all future experience is filtered.",
+      "reflection_question": "Are you describing a specific action or moment, or are you defining your entire identity from it? Would you apply the same permanent, global label to a person you care about who made the same mistake?",
+      "balanced_reframe": "Human beings are far too complex and multidimensional to be accurately captured by a single label drawn from a single behavior. Making a mistake means you are human and fallible — not that you are defined by that fallibility. Behaviors can be examined and changed; identities constructed from one moment deserve to be questioned.",
+      "behavioral_action": "When a self-label arises, practice replacing it with a behaviorally specific statement. Instead of 'I am a failure,' try 'I did not succeed at this particular task on this occasion.' Notice how the more specific statement feels different — and leaves room for growth."
+    },
+    {
+      "id": 5,
+      "title": "Generalizing One Person's Behavior to All People",
+      "explanation": "Overgeneralization extends beyond the self — it is frequently applied to other people, leading to sweeping conclusions such as 'people always let me down' or 'no one can be trusted' based on the behavior of one or a few individuals. While these conclusions often arise from genuinely painful experiences, they impose a rigid template onto all future relationships, limiting openness and perpetuating isolation.",
+      "reflection_question": "Is the behavior of this specific person — in this specific context — truly representative of all people, or even of most people? Are there individuals in your life who have demonstrated the opposite of what this generalization claims?",
+      "balanced_reframe": "People, like experiences, vary enormously. When one or even several people behave in hurtful ways, they are representing themselves and their own limitations — not issuing a verdict on all of humanity. Keeping space open for the possibility of trustworthy, caring people is not naive; it is accurate.",
+      "behavioral_action": "Name one person — past or present — who has shown you care, reliability, or trustworthiness. Write two or three sentences about what their behavior toward you demonstrates about the limits of the overgeneralized belief. Return to this when the global belief feels most convincing."
+    },
+    {
+      "id": 6,
+      "title": "Using the Past as an Absolute Predictor of the Future",
+      "explanation": "This form of overgeneralization involves treating past negative patterns as immutable laws that will govern all future outcomes — 'It has always been this way, so it will always be this way.' This reasoning overlooks the role of change: in circumstances, in the individual's own growth, in relationships, and in the countless variables that make future outcomes genuinely uncertain rather than predetermined.",
+      "reflection_question": "Can you identify at least one area of your life — however small — where something has changed or improved over time, even after a period of difficulty? What does that tell you about the assumption that past patterns must inevitably continue?",
+      "balanced_reframe": "The past informs the future but does not dictate it. People change, circumstances shift, new information and skills are acquired, and situations that once felt permanent often resolve in ways that were not predictable at their most difficult point. History is a reference point — not a sentence.",
+      "behavioral_action": "Identify one belief you hold about your future that begins with 'It will always be...' or 'Things never change for me.' Write down one small, concrete action you could take this week that, regardless of outcome, represents movement rather than stagnation — and contradicts the assumption of fixed inevitability."
+    }
+  ],
+  "clinical_note": "These templates are designed as psychoeducational tools to support — not replace — individualized clinical care. Overgeneralization is closely linked to depressive cognition and negative core beliefs, and may reflect deeper schema-level patterns (e.g., defectiveness, failure, or mistrust schemas) that benefit from longer-term work such as Schema Therapy or Compassion-Focused Therapy alongside standard CBT. Clinicians should adapt tone, pacing, and depth to each client's formulation and therapeutic stage.",
+  "metadata": {
+    "framework": "Cognitive Behavioral Therapy (CBT)",
+    "target_distortion": "Overgeneralization",
+    "tone": "Therapeutic, calm, professional",
+    "intended_use": "Clinician reference, psychoeducation, self-help support",
+    "template_count": 6
+  }
+}

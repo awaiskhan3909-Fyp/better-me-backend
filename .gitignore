@@ -1,0 +1,10 @@
+.env
+.env.local
+*.env
+__pycache__/
+*.py[cod]
+*.db
+better_me.db
+.env.txt
+scratch/
+tests_phase6.py

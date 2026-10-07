@@ -1,0 +1,62 @@
+{
+  "distortion": "Mind Reading",
+  "description": "A cognitive distortion in which an individual assumes they know what others are thinking — typically negative thoughts directed at themselves — without any concrete evidence. This pattern often leads to unnecessary interpersonal anxiety, withdrawal, and self-fulfilling social dynamics.",
+  "templates": [
+    {
+      "id": 1,
+      "title": "Assuming Negative Judgment",
+      "explanation": "Mind reading most commonly manifests as the belief that others are judging, criticizing, or thinking poorly of us — even in the absence of any direct communication. The mind fills in silence or ambiguity with its own worst-case narrative, treating assumption as fact. This can cause significant social distress and avoidance behaviors that further limit reality-testing.",
+      "reflection_question": "What specific, observable behavior or statement led you to conclude what this person was thinking? If you removed your interpretation, what would the neutral facts of the situation actually be?",
+      "balanced_reframe": "People are typically far more absorbed in their own thoughts and concerns than in forming negative opinions about others. What feels like obvious judgment from the outside is often simply someone else's distraction, mood, or inner preoccupation that has nothing to do with you.",
+      "behavioral_action": "Write down the assumed thought you believe the other person had, then write two equally plausible alternative explanations for their behavior. Practice holding all three possibilities lightly rather than treating one as certain."
+    },
+    {
+      "id": 2,
+      "title": "Interpreting Silence as Disapproval",
+      "explanation": "Silence, delayed responses, or neutral facial expressions are frequently misread as signs of anger, disappointment, or rejection when mind reading is active. The brain, wired for social threat detection, can interpret ambiguity as danger — even when none exists. This often leads to preemptive defensive or withdrawing behavior that can strain relationships unnecessarily.",
+      "reflection_question": "Is it possible that this person's silence or neutral response reflects something entirely unrelated to you — fatigue, distraction, their own stress? What would you need to actually know what they are thinking?",
+      "balanced_reframe": "Silence is one of the most ambiguous forms of communication and carries countless possible meanings. Assuming it signals disapproval is one interpretation among many — and rarely the most accurate one. The only reliable way to know what someone thinks is to ask them.",
+      "behavioral_action": "The next time you find yourself interpreting someone's silence negatively, pause and write down three neutral or positive reasons that could explain their behavior. Notice how the emotional intensity shifts when alternatives are genuinely considered."
+    },
+    {
+      "id": 3,
+      "title": "Projecting Personal Insecurities",
+      "explanation": "Mind reading is frequently rooted in our own insecurities — we assume others are focused on the very qualities we feel most uncertain about in ourselves. This projection makes the distortion feel highly convincing, because it aligns with our internal narrative. In reality, what we assume others see is often a reflection of what we fear about ourselves rather than their actual perception.",
+      "reflection_question": "Is the negative thought you believe this person is having about you something you also believe — or fear — about yourself? How might your own self-perception be shaping what you assume others think?",
+      "balanced_reframe": "Other people do not have access to your inner fears and self-criticisms. What feels glaringly obvious to you about your own perceived flaws is largely invisible to others, who are viewing you with far less scrutiny and far more neutrality than your inner critic suggests.",
+      "behavioral_action": "Identify one insecurity you believe others are noticing. Write a brief, compassionate counter-statement — something a trusted friend would say about you on this topic. Return to this statement when the mind-reading thought arises."
+    },
+    {
+      "id": 4,
+      "title": "Anticipating Rejection Before It Happens",
+      "explanation": "When mind reading combines with fear of rejection, individuals may convince themselves that others will react negatively before any interaction has even taken place. This anticipatory mind reading can lead to avoidance of relationships, opportunities, and honest communication — creating the very isolation the person fears. It functions as a self-protective strategy that ultimately causes more harm than the imagined rejection would.",
+      "reflection_question": "How often have your predictions about how someone would react turned out to be accurate? What has happened in the past when you gave people — or situations — a chance despite your fear of rejection?",
+      "balanced_reframe": "Anticipating rejection is not the same as experiencing it. Preemptively withdrawing to avoid a painful outcome that may never come closes doors that could lead to connection, growth, and positive experience. Most people respond more warmly than anxiety predicts.",
+      "behavioral_action": "Identify one small interaction or disclosure you have been avoiding due to anticipated rejection. Commit to taking that step this week and observe the actual response — comparing it honestly to what you had predicted."
+    },
+    {
+      "id": 5,
+      "title": "Misreading Tone and Body Language",
+      "explanation": "Mind reading often involves over-interpreting nonverbal cues — a glance, a tone of voice, a brief pause — as confirmation of negative thoughts others are having. While body language carries meaning, it is highly context-dependent and easily misread, particularly when anxiety is elevated. The anxious mind tends to scan for threat signals and find them even in neutral expressions.",
+      "reflection_question": "Could this person's tone, expression, or body language be influenced by factors entirely unrelated to you — such as their own stress, physical discomfort, or focus on something else? What would a neutral observer make of the same behavior?",
+      "balanced_reframe": "Nonverbal communication is far more ambiguous than it feels in the moment of anxious interpretation. A sigh, a glance, or a flat tone carries dozens of possible meanings. Treating one anxiety-driven interpretation as the definitive truth closes off more accurate and balanced understanding.",
+      "behavioral_action": "When you notice yourself interpreting a nonverbal cue negatively, apply the 'neutral observer' technique: imagine a calm, unbiased person watching the same interaction. Write down what they would likely conclude — without the filter of personal anxiety."
+    },
+    {
+      "id": 6,
+      "title": "Assuming Persistent Negative Impressions",
+      "explanation": "This form of mind reading involves believing that others have formed a lasting, fixed negative impression based on a single moment — a stumbled word, a mistake, an awkward interaction. This overestimates both how much others remember and how negatively they evaluate us over time. Most people extend far more grace and forget far more quickly than this distortion allows for.",
+      "reflection_question": "When someone you care about made a mistake or said something awkward in front of you, did you form a lasting negative judgment of them — or did you move on relatively quickly? Why might others respond to you any differently?",
+      "balanced_reframe": "People are not cataloguing your errors with the precision your anxiety suggests. Social interactions are imperfect for everyone, and others are generally forgiving of the same stumbles they make themselves. One moment rarely defines how someone thinks of you.",
+      "behavioral_action": "Recall one past moment you feared had permanently damaged someone's impression of you. Reflect on how the relationship actually unfolded afterward. Use this as evidence to gently challenge the belief that single moments create permanent negative impressions."
+    }
+  ],
+  "clinical_note": "These templates are intended as psychoeducational tools to complement — not replace — individualized therapeutic care. Clinicians should adapt language and framing to each client's unique context, cultural background, attachment history, and stage of treatment. Mind reading distortions may be particularly prominent in social anxiety disorder, depression, and relational trauma — and may warrant deeper schema-level exploration in those contexts.",
+  "metadata": {
+    "framework": "Cognitive Behavioral Therapy (CBT)",
+    "target_distortion": "Mind Reading (Arbitrary Inference)",
+    "tone": "Therapeutic, calm, professional",
+    "intended_use": "Clinician reference, psychoeducation, self-help support",
+    "template_count": 6
+  }
+}

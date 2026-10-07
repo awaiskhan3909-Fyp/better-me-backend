@@ -1,0 +1,62 @@
+{
+  "distortion": "Catastrophizing",
+  "description": "A cognitive distortion where an individual anticipates the worst possible outcome of a situation, often blowing its impact far out of proportion to the actual likelihood or severity.",
+  "templates": [
+    {
+      "id": 1,
+      "title": "The Spiraling 'What If'",
+      "explanation": "Catastrophizing often begins with a single 'what if' that rapidly spirals into imagined worst-case scenarios. The mind treats unlikely possibilities as near-certain outcomes, generating intense anxiety disproportionate to the actual situation. This pattern can feel protective but ultimately amplifies distress rather than solving problems.",
+      "reflection_question": "If you assigned a realistic probability (0–100%) to the worst outcome you are imagining, what number would you honestly give it — and what does that tell you?",
+      "balanced_reframe": "While it is understandable to consider potential difficulties, most feared outcomes do not materialize. Even if a challenge does arise, you have navigated difficulties before and possess more coping resources than this moment of fear may suggest.",
+      "behavioral_action": "Write down the worst-case, best-case, and most likely outcome of the situation. Focus your next small step on the most realistic scenario, not the extreme."
+    },
+    {
+      "id": 2,
+      "title": "Magnifying the Threat",
+      "explanation": "When catastrophizing, the mind acts like a magnifying glass held over a perceived threat — making it appear far larger and more dangerous than it is in reality. This distortion can cause physical stress responses even when no real danger is present. Recognizing the magnification is the first step toward reducing its power.",
+      "reflection_question": "Are you responding to what is actually happening right now, or to a mental projection of what might happen? What evidence do you have that supports — or challenges — your fear?",
+      "balanced_reframe": "Discomfort and uncertainty are a normal part of life, and they are survivable. This situation may be difficult, but 'difficult' is not the same as 'devastating.' You are stronger than the catastrophic story your mind is telling.",
+      "behavioral_action": "Practice a brief grounding exercise — name 5 things you can see, 4 you can touch, 3 you can hear. This interrupts the catastrophic thought loop and anchors you to present reality."
+    },
+    {
+      "id": 3,
+      "title": "Predicting an Unbearable Future",
+      "explanation": "Catastrophizing frequently involves predicting a future that feels completely unbearable or unrecoverable. This 'fortune-telling' error overlooks human resilience, adaptability, and the availability of support. Our brains tend to underestimate how well we cope after adverse events — a phenomenon known as 'impact bias.'",
+      "reflection_question": "Can you recall a past situation where you feared you would not cope — but ultimately did? What helped you get through it, and how might those same strengths apply here?",
+      "balanced_reframe": "The future is uncertain, which means it is equally open to positive outcomes. Even in difficult scenarios, people adapt, receive help, and discover inner resources they didn't know they had. You are unlikely to face this alone.",
+      "behavioral_action": "Write a brief 'coping evidence' list — three past challenges you survived and one strength you demonstrated in each. Keep it accessible for moments when catastrophic thinking peaks."
+    },
+    {
+      "id": 4,
+      "title": "Emotional Reasoning as False Evidence",
+      "explanation": "When catastrophizing, feelings of dread or panic are often misread as confirmation that something truly terrible is about to happen. This is emotional reasoning — 'I feel terrified, therefore something catastrophic must be imminent.' In reality, intense emotion is evidence of distress, not of danger. The feeling and the fact are not the same.",
+      "reflection_question": "Are you interpreting your emotional state as proof that the worst will happen? What would you say to a close friend who was feeling this way but facing the same situation?",
+      "balanced_reframe": "Feeling afraid does not mean the threat is real or as large as it feels. Anxiety is your nervous system trying to protect you — sometimes it overestimates the danger. You can acknowledge the feeling without accepting its catastrophic interpretation.",
+      "behavioral_action": "Try a brief 'fact vs. feeling' journal entry: write the thought, label it as a feeling or a fact, and then write one sentence that is verifiably true about the situation right now."
+    },
+    {
+      "id": 5,
+      "title": "The Chain Reaction Catastrophe",
+      "explanation": "This form of catastrophizing involves imagining a chain of events where one setback inevitably leads to a series of increasingly terrible outcomes. Each link in the chain is assumed rather than evaluated, creating a narrative of total collapse. In reality, most chains have many interruption points — choices, interventions, and support systems that prevent the worst.",
+      "reflection_question": "Looking at the chain of events you are imagining — which links are actual facts, and which are assumptions? Where in that chain could a different outcome realistically occur?",
+      "balanced_reframe": "Life rarely follows the unbroken catastrophic sequence the anxious mind projects. At each step of a difficult situation, there are options, support systems, and possibilities for recovery that your current state of fear may be obscuring.",
+      "behavioral_action": "Map the feared chain on paper, then beside each link write one realistic alternative outcome or intervention that could break the chain. Notice how many exist."
+    },
+    {
+      "id": 6,
+      "title": "Catastrophizing About Physical Sensations",
+      "explanation": "Physical symptoms such as a racing heart, tension, or fatigue are frequently catastrophized into signs of serious illness or impending collapse. This pattern can create a feedback loop — anxiety produces physical sensations, which are then misinterpreted as catastrophic, which intensifies anxiety further. Gently challenging these interpretations can interrupt the cycle.",
+      "reflection_question": "Is there an alternative, benign explanation for what you are feeling physically? Have you experienced similar sensations before that turned out to be related to stress or anxiety rather than something serious?",
+      "balanced_reframe": "Physical sensations, especially during periods of stress, are rarely the emergencies they feel like. The body's stress response is protective and temporary. If you are genuinely concerned about a symptom, consulting a professional is a grounded, practical step — not a confirmation of catastrophe.",
+      "behavioral_action": "Engage in slow, diaphragmatic breathing — inhale for 4 counts, hold for 4, exhale for 6. Do this for 2–3 minutes to regulate your nervous system and gently challenge the physical catastrophizing loop."
+    }
+  ],
+  "clinical_note": "These templates are intended as psychoeducational tools to complement — not replace — individualized therapeutic care. Clinicians should adapt language and framing to each client's unique context, cultural background, and stage of treatment.",
+  "metadata": {
+    "framework": "Cognitive Behavioral Therapy (CBT)",
+    "target_distortion": "Catastrophizing (Magnification)",
+    "tone": "Therapeutic, calm, professional",
+    "intended_use": "Clinician reference, psychoeducation, self-help support",
+    "template_count": 6
+  }
+}

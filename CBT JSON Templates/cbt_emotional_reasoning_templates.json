@@ -1,0 +1,62 @@
+{
+  "distortion": "Emotional Reasoning",
+  "description": "A cognitive distortion in which an individual uses their emotional state as the primary — or sole — evidence for the truth of a belief. The core logic follows the pattern: 'I feel it, therefore it must be true.' Emotional reasoning bypasses objective evaluation entirely, allowing fear, shame, guilt, or dread to function as proof of real-world facts. It is deeply intertwined with anxiety, depression, and low self-worth.",
+  "templates": [
+    {
+      "id": 1,
+      "title": "'I Feel Worthless, Therefore I Am Worthless'",
+      "explanation": "One of the most painful expressions of emotional reasoning occurs when feelings of low self-worth are treated as objective evidence of actual worthlessness. The intensity of the feeling — how real and total it seems — is mistaken for confirmation of a fundamental truth about the self. In reality, feelings of worthlessness are symptoms of emotional pain, not accurate assessments of a person's value or character.",
+      "reflection_question": "If a trusted friend described feeling worthless during a period of deep pain, would you accept their feeling as proof that they genuinely are worthless — or would you recognize it as a reflection of how much they are hurting right now? What would it mean to offer yourself the same distinction?",
+      "balanced_reframe": "Feelings of worthlessness are among the most common symptoms of depression and emotional exhaustion — they are information about your current internal state, not verdicts about who you are. The fact that something feels profoundly true in a moment of pain does not make it an accurate or permanent description of your worth.",
+      "behavioral_action": "When the feeling of worthlessness arises, write it down as a feeling rather than a fact: 'I am having the feeling that I am worthless' rather than 'I am worthless.' This small linguistic shift creates just enough distance to begin questioning the feeling's authority as evidence."
+    },
+    {
+      "id": 2,
+      "title": "'I Feel Anxious, So Something Must Be Wrong'",
+      "explanation": "Anxiety is among the most fertile grounds for emotional reasoning. When the body produces sensations of fear, dread, or unease, the mind frequently interprets these sensations as confirmation that a genuine threat is present. This creates a self-reinforcing loop: anxiety is taken as evidence of danger, which escalates anxiety, which appears to confirm the danger further. In reality, anxiety can arise in the complete absence of real threat.",
+      "reflection_question": "Is your anxiety responding to something objectively dangerous in your current environment — or is it responding to a thought, memory, or anticipated scenario? What would change in how you relate to the feeling if you treated it as a signal to investigate rather than as proof of real danger?",
+      "balanced_reframe": "Anxiety is your nervous system's alert mechanism — sensitive, protective, and frequently miscalibrated. It fires in response to perceived threat, not only actual threat. Feeling anxious means your nervous system is activated; it does not mean the danger your anxiety is pointing to is real, imminent, or as severe as the feeling suggests.",
+      "behavioral_action": "Practice labeling the anxiety without acting on its implied conclusion: 'I notice I am feeling anxious. This is a feeling, not a fact about my safety.' Then gently ask: 'What is the actual, observable evidence — separate from this feeling — that something is wrong right now?'"
+    },
+    {
+      "id": 3,
+      "title": "'I Feel Guilty, So I Must Have Done Something Wrong'",
+      "explanation": "Guilt is an emotion designed to signal that our behavior may have violated our own values — a useful and prosocial function when it is proportionate and accurate. Emotional reasoning transforms guilt into an infallible detector of wrongdoing, however, even when the feeling arises in the absence of any actual harm caused. Many people — particularly those with high empathy or histories of criticism — experience chronic guilt that far outpaces any real wrongdoing.",
+      "reflection_question": "When you examine the situation that is generating guilt as objectively as you can — separate from the intensity of the feeling — did you actually cause harm, violate your values, or behave wrongly? Or is the feeling of guilt present without a proportionate wrongdoing to justify it?",
+      "balanced_reframe": "Feeling guilty and being guilty are not the same thing. Guilt as a feeling can arise from people-pleasing, boundary-setting, saying no, prioritizing your own needs, or simply existing in spaces where others are unhappy — none of which constitute genuine wrongdoing. The feeling deserves examination, not automatic acceptance as evidence.",
+      "behavioral_action": "When guilt arises, run a brief 'guilt audit': write down what you believe you did wrong, who was harmed, and how. If the harm is real and proportionate, consider a genuine repair. If the audit reveals no clear wrongdoing, practice responding to the feeling with curiosity rather than self-punishment: 'Why might I be feeling this — and is the feeling warranted here?'"
+    },
+    {
+      "id": 4,
+      "title": "'I Feel Like a Failure, So My Work Must Be Bad'",
+      "explanation": "Emotional reasoning in performance and creative contexts leads individuals to evaluate the quality of their work, decisions, or efforts entirely through the lens of how they feel while doing them or afterward. Feeling discouraged, uncertain, or dissatisfied becomes interpreted as objective evidence of poor quality — even when external indicators suggest otherwise. This pattern is particularly common in imposter syndrome and perfectionism.",
+      "reflection_question": "Are you evaluating the actual quality of your work based on its content, effort, and outcomes — or based on how you feel about it in this moment? Have there been times when you felt uncertain about your work and it turned out to be genuinely valuable?",
+      "balanced_reframe": "The feeling of being inadequate and the fact of inadequate work are two different things that sometimes overlap and often do not. Many high-quality efforts are accompanied by feelings of doubt, and many genuinely poor efforts are accompanied by confidence. Your emotional state during or after work is not a reliable quality metric.",
+      "behavioral_action": "Before concluding that your work is poor based on how you feel, identify three specific, observable qualities of the work itself — independent of your emotional state. Ask a trusted person for feedback if possible, using their response as an external data point that your feeling alone cannot provide."
+    },
+    {
+      "id": 5,
+      "title": "'I Feel Unloved, So No One Truly Cares About Me'",
+      "explanation": "Emotional reasoning applied to attachment and belonging produces one of its most isolating effects: when a person feels unloved or disconnected, that feeling is treated as proof that they are genuinely unloved — regardless of the relational evidence that surrounds them. This can occur even in the presence of caring relationships, making genuine connection feel invisible or unreal when emotional pain is high.",
+      "reflection_question": "Are there people in your life who have shown care, consistency, or investment in your wellbeing — even if you cannot fully feel that care right now? What might it mean that the feeling of being unloved and the reality of being cared for can coexist at the same time?",
+      "balanced_reframe": "Emotional pain — particularly loneliness, grief, or depression — can create a felt sense of disconnection that exists independently of actual relational reality. Feeling unloved in a moment of pain is real and deserves compassion; it is not, however, a reliable census of who in your life genuinely cares about you.",
+      "behavioral_action": "Write the names of two or three people who have demonstrated care for you through consistent actions — not grand gestures, but reliable presence, small kindnesses, or genuine interest. When the feeling of being unloved is strong, return to this list and let the behavioral evidence gently challenge the emotional conclusion."
+    },
+    {
+      "id": 6,
+      "title": "'I Feel Overwhelmed, So I Cannot Cope'",
+      "explanation": "When overwhelm arrives, emotional reasoning frequently converts the feeling of being unable to cope into the belief that coping is genuinely impossible. This transforms a temporary emotional state into a perceived permanent incapacity, triggering avoidance, helplessness, and withdrawal. In reality, the feeling of overwhelm and the actual inability to function are very different — the former is common and temporary, the latter is far rarer than the feeling suggests.",
+      "reflection_question": "Have you felt this degree of overwhelm before — and if so, what actually happened? Did you find some way to move forward, even imperfectly? What does your history of navigating difficult moments tell you about your actual — as opposed to your felt — capacity to cope?",
+      "balanced_reframe": "Overwhelm is an emotional signal that your current demands feel like they exceed your current resources. It is not a factual assessment of your capabilities. Feeling unable to cope is the experience of overwhelm itself — and moving through it, even slowly and imperfectly, is itself a form of coping that the feeling insists is impossible.",
+      "behavioral_action": "When overwhelm produces the belief 'I cannot cope,' reduce the task to its absolute smallest unit: not 'handle this situation,' but 'take one breath,' 'send one message,' or 'do five minutes of one task.' Completing even the smallest unit provides direct, embodied evidence that the belief of total incapacity is not accurate."
+    }
+  ],
+  "clinical_note": "These templates are intended as psychoeducational tools to complement — not replace — individualized therapeutic care. Emotional reasoning is a transdiagnostic feature present across anxiety disorders, major depression, PTSD, and personality disorders, and is particularly central to the maintenance of panic disorder and OCD. In trauma presentations, emotional reasoning may be deeply adaptive in origin — the body learned to treat feelings as threat signals in genuinely dangerous environments. Clinicians working with trauma should approach the challenging of emotional reasoning with particular care, pacing, and sensitivity to the function the pattern has historically served. Integration with somatic approaches, EMDR, or ACT-based defusion techniques may be indicated alongside standard CBT restructuring.",
+  "metadata": {
+    "framework": "Cognitive Behavioral Therapy (CBT)",
+    "target_distortion": "Emotional Reasoning",
+    "tone": "Therapeutic, calm, professional",
+    "intended_use": "Clinician reference, psychoeducation, self-help support",
+    "template_count": 6
+  }
+}

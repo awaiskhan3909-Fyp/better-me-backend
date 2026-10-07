@@ -1,0 +1,62 @@
+{
+  "distortion": "All-or-Nothing Thinking",
+  "description": "A cognitive distortion — also known as black-and-white or dichotomous thinking — in which experiences, people, and the self are evaluated in absolute, binary terms with no middle ground. Things are seen as either perfect or worthless, completely successful or total failures, entirely good or entirely bad. This rigidity eliminates nuance, amplifies distress, and makes adaptive coping significantly more difficult.",
+  "templates": [
+    {
+      "id": 1,
+      "title": "Perfect or a Complete Failure",
+      "explanation": "All-or-nothing thinking most commonly appears in performance contexts, where anything short of perfection is automatically categorized as total failure. This binary evaluation system sets an impossibly high threshold for success, ensuring that most efforts — however genuinely commendable — are experienced as inadequate. The vast middle ground of 'good enough,' 'partial success,' and 'meaningful progress' becomes cognitively invisible.",
+      "reflection_question": "If you evaluated this situation on a scale of 0 to 100 rather than as simply 'success' or 'failure,' where would it honestly fall — and what would that more nuanced score actually mean about your effort, progress, and capability?",
+      "balanced_reframe": "Excellence and failure are not the only two destinations on the spectrum of human performance. Most meaningful achievements live in the middle — imperfect, evolving, and real. A result that falls short of ideal is not the same as a result that has no value, and partial progress is still progress.",
+      "behavioral_action": "After completing any task this week, resist an immediate pass/fail judgment. Instead, write down three specific things that went well or showed effort, alongside one area to improve. Practice grading in shades of gray rather than black and white."
+    },
+    {
+      "id": 2,
+      "title": "One Flaw Cancels All Strengths",
+      "explanation": "In this pattern, a single weakness, mistake, or imperfection is treated as sufficient to negate all positive qualities and achievements. The mind operates like a veto system — one negative element overrides an entire body of evidence to the contrary. This creates a profoundly distorted self-image and makes it nearly impossible to experience genuine self-appreciation or satisfaction.",
+      "reflection_question": "Would you evaluate another person — someone you respect and care about — by focusing exclusively on their flaws while dismissing everything else they bring? What would a more complete, balanced accounting of yourself actually look like?",
+      "balanced_reframe": "Human beings are composites of strengths, limitations, growth areas, and changing capacities. A single flaw does not erase a lifetime of effort, care, achievement, and character. The presence of an imperfection and the presence of genuine worth are not mutually exclusive — they almost always coexist.",
+      "behavioral_action": "Create a personal 'full inventory' — list five genuine strengths or qualities you possess alongside the flaw or mistake you have been focusing on. Read the complete list aloud and reflect on whether the flaw truly cancels out everything else on it."
+    },
+    {
+      "id": 3,
+      "title": "All-or-Nothing in Relationships",
+      "explanation": "Dichotomous thinking applied to relationships produces rigid evaluations of others as entirely good or entirely bad, completely trustworthy or totally untrustworthy, fully supportive or wholly disappointing. When someone fails to meet an expectation, they can shift abruptly from idealized to devalued — a pattern that creates relational instability, chronic disappointment, and difficulty sustaining the nuanced, reciprocal connections that healthy relationships require.",
+      "reflection_question": "Is it possible for someone to genuinely care about you and still fall short in certain moments, or have limitations that have nothing to do with their regard for you? Can you hold both the disappointing moment and the larger context of the relationship at the same time?",
+      "balanced_reframe": "Real relationships are not defined by their best or worst moments in isolation — they are built from an accumulation of interactions, intentions, repairs, and shared history. People are allowed to be flawed and still be worthy of connection. Holding complexity in relationships is not lowering standards — it is seeing people as they actually are.",
+      "behavioral_action": "Think of a relationship where all-or-nothing thinking has recently been active. Write three qualities or positive moments that exist alongside the disappointment. Practice describing this person in a sentence that holds both the difficulty and the value simultaneously."
+    },
+    {
+      "id": 4,
+      "title": "The Broken Streak: Starting Over Mentality",
+      "explanation": "All-or-nothing thinking is particularly destructive in the context of goals and habits. A single lapse — one missed workout, one unplanned meal, one day off a routine — is treated as a complete collapse of the entire effort, triggering an 'I've already ruined it, so why bother' response. This thinking discards all prior progress and resets the perceived starting point to zero, making sustained effort feel futile.",
+      "reflection_question": "If you had saved money consistently for six months and then spent unexpectedly one day, would your six months of saving be genuinely erased — or would missing one day actually represent a small interruption in an otherwise meaningful pattern of effort?",
+      "balanced_reframe": "Progress is not linear, and a single lapse is not the same as a relapse or a full reset. Effort accumulates and does not simply evaporate the moment it is imperfect. The most effective response to a missed day or a slip is a compassionate, immediate return — not a global verdict of failure that justifies abandoning the effort entirely.",
+      "behavioral_action": "When a lapse occurs, practice the 'next right action' principle: rather than evaluating the entirety of your effort, ask only what the single most constructive next step is. Take that step — however small — and let it represent continuity rather than a fresh start from zero."
+    },
+    {
+      "id": 5,
+      "title": "Emotional All-or-Nothing: Fine or Falling Apart",
+      "explanation": "Dichotomous thinking extends into emotional experience, where individuals may recognize only the extremes — feeling completely fine or utterly overwhelmed, fully in control or totally falling apart. This binary emotional vocabulary leaves little room for the moderate, manageable emotional states that constitute most of daily life. It can lead to both minimizing genuine distress and catastrophizing normal discomfort.",
+      "reflection_question": "On an emotional scale from 0 (complete calm) to 10 (maximum distress), where are you right now — and does that number allow for the possibility that you are neither perfectly fine nor completely falling apart, but somewhere in between that is workable?",
+      "balanced_reframe": "Emotional experience is continuous and fluid, not a toggle switch between fine and crisis. Feeling uncomfortable, tired, sad, or anxious does not mean you are falling apart — it means you are having a human emotional response to real circumstances. Most emotional states, even difficult ones, are moderate and manageable rather than extreme.",
+      "behavioral_action": "Introduce an emotional scaling practice into your daily routine: once each day, rate your emotional state from 0 to 10 and write one sentence describing what that specific number feels like. Over time, this builds tolerance for — and recognition of — the wide range of states between the extremes."
+    },
+    {
+      "id": 6,
+      "title": "All-or-Nothing Standards Applied to Others",
+      "explanation": "All-or-nothing thinking does not only distort self-evaluation — it can impose impossibly rigid standards on others, leading to chronic frustration, frequent disappointment, and difficulty extending compassion or flexibility. When others are expected to be entirely consistent, always understanding, or perfectly responsive, any deviation triggers disproportionate reactions that can damage otherwise healthy relationships.",
+      "reflection_question": "Are the standards you are applying to this person ones that any human being could consistently meet? If you applied those same standards to yourself — accounting for off days, personal limits, and imperfect moments — how would you fare?",
+      "balanced_reframe": "Expecting consistency, care, and effort from others is reasonable and healthy. Expecting perfection — or interpreting any lapse as a fundamental character flaw — sets a threshold no one can meet. Allowing others the same grace and complexity you would hope to receive creates more durable, honest, and satisfying relationships.",
+      "behavioral_action": "When frustration with someone's behavior arises, pause and ask: 'Is this a pattern or a moment?' If it is an isolated instance, practice consciously filing it as a moment — not a verdict — before responding. Reserve pattern-level responses for situations where genuine patterns have been established."
+    }
+  ],
+  "clinical_note": "These templates are intended as psychoeducational tools to complement — not replace — individualized therapeutic care. All-or-nothing thinking is a core feature of perfectionism, depression, borderline personality disorder, and eating disorders, and may reflect deeply embedded schemas around unrelenting standards, defectiveness, or subjugation. In these presentations, standard cognitive restructuring may need to be integrated with schema-level interventions, dialectical strategies (as in DBT), or self-compassion training to address the distortion at sufficient depth. Clinicians should calibrate the use of these templates to each client's diagnostic profile, cultural context, and therapeutic readiness.",
+  "metadata": {
+    "framework": "Cognitive Behavioral Therapy (CBT)",
+    "target_distortion": "All-or-Nothing Thinking (Dichotomous / Black-and-White Thinking)",
+    "tone": "Therapeutic, calm, professional",
+    "intended_use": "Clinician reference, psychoeducation, self-help support",
+    "template_count": 6
+  }
+}

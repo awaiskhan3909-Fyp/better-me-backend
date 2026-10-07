@@ -1,4 +1,6 @@
 import app.db.database
+from app.db.database import engine, Base
+import app.db.models
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,7 +11,9 @@ from app.services.safety_service import safety_service
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Load ML models into memory only once
+    # Startup: Auto-create DB tables if not present
+    Base.metadata.create_all(bind=engine)
+    # Load ML models into memory only once
     print("\n" + "=" * 50)
     print("[INFO] Starting Better Me AI Backend Services...")
     print("=" * 50)

@@ -2,7 +2,7 @@ import json
 import torch
 from pathlib import Path
 from transformers import AutoTokenizer, BertForSequenceClassification
-from app.core.config import DISTORTION_MODEL_DIR
+from app.core.config import DISTORTION_MODEL_DIR, HF_DISTORTION_REPO
 from app.schemas.response import DistortionPrediction
 
 

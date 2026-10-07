@@ -23,9 +23,9 @@ class SafetyService:
 
         try:
             print("[INFO] Loading Safety Classifier BERT model & tokenizer...")
-            tokenizer_source = str(distortion_dir) if distortion_dir.exists() else HF_SAFETY_REPO
+            tokenizer_source = str(distortion_dir) if distortion_dir.exists() else "bert-base-uncased"
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_source)
-            config = BertConfig.from_pretrained(tokenizer_source, num_labels=len(self.label_names))
+            config = BertConfig.from_pretrained("bert-base-uncased", num_labels=len(self.label_names))
             self.model = BertForSequenceClassification(config)
 
             if model_path.exists():
@@ -37,8 +37,17 @@ class SafetyService:
 
             state_dict = torch.load(actual_weights_path, map_location=self.device)
             self.model.load_state_dict(state_dict)
+            del state_dict  # Free uncompressed weights immediately from RAM
             self.model.to(self.device)
             self.model.eval()
+
+            # Dynamic INT8 Quantization (reduces RAM from ~440MB to ~110MB on CPU)
+            if self.device.type == "cpu":
+                self.model = torch.quantization.quantize_dynamic(
+                    self.model, {torch.nn.Linear}, dtype=torch.qint8
+                )
+            import gc
+            gc.collect()
 
             self.loaded = True
             print("[SUCCESS] Safety Classifier BERT model loaded successfully!")

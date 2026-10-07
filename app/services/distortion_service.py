@@ -29,6 +29,14 @@ class DistortionService:
             self.model.to(self.device)
             self.model.eval()
 
+            # Quantize dynamic to reduce RAM from 440MB to ~110MB on CPU
+            if self.device.type == "cpu":
+                self.model = torch.quantization.quantize_dynamic(
+                    self.model, {torch.nn.Linear}, dtype=torch.qint8
+                )
+            import gc
+            gc.collect()
+
             label_map_path = model_dir / "label_map.json" if model_dir.exists() else None
             if label_map_path and label_map_path.exists():
                 with open(label_map_path, "r", encoding="utf-8") as f:

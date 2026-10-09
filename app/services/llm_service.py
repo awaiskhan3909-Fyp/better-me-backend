@@ -2,9 +2,10 @@ import logging
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 
-from app.core.config import LLM_FALLBACK_ENABLED
+from app.core.config import LLM_FALLBACK_ENABLED, LLM_PROVIDER, HF_LLM_REPO, USE_LOCAL_LLM
 from app.services.llm import (
     GeminiLLMProvider,
+    HuggingFaceLLMProvider,
     prompt_builder,
     PROMPT_VERSION,
     response_parser,
@@ -14,6 +15,16 @@ from app.services.conversation_manager import ConversationContext
 from app.schemas.response import DistortionPrediction, EntityItem, CBTGuidance
 
 logger = logging.getLogger("better_me.llm_service")
+
+
+def get_default_provider():
+    if LLM_PROVIDER in ["huggingface", "local_hf", "hf"]:
+        logger.info(f"Using Open-Source HuggingFace Provider for CBT ({HF_LLM_REPO})")
+        return HuggingFaceLLMProvider(
+            repo_id=HF_LLM_REPO,
+            use_local_pipeline=USE_LOCAL_LLM or (LLM_PROVIDER == "local_hf")
+        )
+    return GeminiLLMProvider()
 
 
 class LLMResult(BaseModel):
@@ -27,13 +38,14 @@ class LLMResult(BaseModel):
 
 class LLMService:
     """
-    Unified Orchestrator for Phase 6 Conversational LLM Integration.
+    Unified Orchestrator for Conversational LLM Integration.
+    Supports both Google Gemini API and Fine-Tuned Open-Source HuggingFace Models.
     Controls prompt construction, provider delegation, response validation,
     deterministic safety overrides, and seamless offline fallbacks.
     """
 
     def __init__(self, provider=None):
-        self.provider = provider or GeminiLLMProvider()
+        self.provider = provider or get_default_provider()
 
     def generate_response(
         self,

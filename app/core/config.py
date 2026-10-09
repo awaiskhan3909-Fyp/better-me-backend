@@ -37,8 +37,11 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_SQLITE_PATH}")
 # Conversation Intelligence Configuration
 CONVERSATION_HISTORY_LIMIT = int(os.getenv("CONVERSATION_HISTORY_LIMIT", 10))
 
-# Conversational LLM Configuration (Google Gemini API)
+# Conversational LLM Configuration (Google Gemini API & Open-Source HuggingFace)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", None))
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "gemini-3.1-flash-lite")
 LLM_FALLBACK_ENABLED = os.getenv("LLM_FALLBACK_ENABLED", "true").lower() == "true"
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").lower()
+HF_LLM_REPO = os.getenv("HF_LLM_REPO", "awaiskhan4039/better-me-cbt-llama3-lora")
+USE_LOCAL_LLM = os.getenv("USE_LOCAL_LLM", "false").lower() == "true"
 

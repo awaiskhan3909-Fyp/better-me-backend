@@ -45,13 +45,27 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
 
             logger.info(f"Loading local 4-bit pipeline for '{self.repo_id}' on CUDA...")
             tokenizer = AutoTokenizer.from_pretrained(self.repo_id, token=self.hf_token)
-            model = AutoModelForCausalLM.from_pretrained(
-                self.repo_id,
-                token=self.hf_token,
-                torch_dtype=torch.float16,
-                load_in_4bit=True,
-                device_map="auto"
-            )
+
+            model = None
+            try:
+                from peft import AutoPeftModelForCausalLM
+                model = AutoPeftModelForCausalLM.from_pretrained(
+                    self.repo_id,
+                    token=self.hf_token,
+                    torch_dtype=torch.float16,
+                    load_in_4bit=True,
+                    device_map="auto"
+                )
+            except Exception as peft_err:
+                logger.info(f"Loading as standard CausalLM: {peft_err}")
+                model = AutoModelForCausalLM.from_pretrained(
+                    self.repo_id,
+                    token=self.hf_token,
+                    torch_dtype=torch.float16,
+                    load_in_4bit=True,
+                    device_map="auto"
+                )
+
             self.local_pipeline = pipeline(
                 "text-generation",
                 model=model,

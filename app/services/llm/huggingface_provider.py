@@ -32,10 +32,21 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
         self.use_local_pipeline = use_local_pipeline
         self.local_pipeline = None
 
+        # Auto-detect CUDA GPU environment (e.g. Google Colab Tesla T4)
+        if not self.use_local_pipeline:
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    logger.info("CUDA GPU detected. Automatically enabling local 4-bit HuggingFace pipeline on GPU.")
+                    self.use_local_pipeline = True
+            except Exception:
+                pass
+
         if self.use_local_pipeline:
             self._init_local_pipeline()
 
         logger.info(f"Initialized HuggingFace LLM Provider with repo '{self.repo_id}' (Local: {self.use_local_pipeline})")
+
 
     def _init_local_pipeline(self):
         """Loads 4-bit model directly on available GPU."""

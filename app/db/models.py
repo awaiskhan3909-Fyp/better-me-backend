@@ -30,6 +30,7 @@ class User(Base):
     intake_assessment: Mapped[Optional["UserIntakeAssessment"]] = relationship("UserIntakeAssessment", back_populates="user", uselist=False, cascade="all, delete-orphan")
     clinical_profile: Mapped[Optional["PatientClinicalProfile"]] = relationship("PatientClinicalProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     episodic_memories: Mapped[List["EpisodicTherapyMemory"]] = relationship("EpisodicTherapyMemory", back_populates="user", cascade="all, delete-orphan")
+    thought_records: Mapped[List["CBTThoughtRecord"]] = relationship("CBTThoughtRecord", back_populates="user", cascade="all, delete-orphan")
 
 
 class Conversation(Base):
@@ -183,3 +184,30 @@ class EpisodicTherapyMemory(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="episodic_memories")
+
+
+class CBTThoughtRecord(Base):
+    __tablename__ = "cbt_thought_records"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    conversation_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    situation: Mapped[str] = mapped_column(Text, nullable=False)
+    automatic_thought: Mapped[str] = mapped_column(Text, nullable=False)
+    initial_belief_rating: Mapped[int] = mapped_column(Integer, default=80, nullable=False)
+    emotions: Mapped[dict] = mapped_column(JSON_TYPE, default=dict, nullable=False)
+
+    distortion_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    evidence_for: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_against: Mapped[str] = mapped_column(Text, nullable=False)
+    balanced_thought: Mapped[str] = mapped_column(Text, nullable=False)
+    outcome_belief_rating: Mapped[int] = mapped_column(Integer, default=20, nullable=False)
+    outcome_emotions: Mapped[dict] = mapped_column(JSON_TYPE, default=dict, nullable=False)
+    behavioral_action: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="thought_records")

@@ -28,6 +28,8 @@ class User(Base):
     # Relationships
     conversations: Mapped[List["Conversation"]] = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
     intake_assessment: Mapped[Optional["UserIntakeAssessment"]] = relationship("UserIntakeAssessment", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    clinical_profile: Mapped[Optional["PatientClinicalProfile"]] = relationship("PatientClinicalProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    episodic_memories: Mapped[List["EpisodicTherapyMemory"]] = relationship("EpisodicTherapyMemory", back_populates="user", cascade="all, delete-orphan")
 
 
 class Conversation(Base):
@@ -140,3 +142,44 @@ class UserIntakeAssessment(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="intake_assessment")
+
+
+class PatientClinicalProfile(Base):
+    __tablename__ = "patient_clinical_profiles"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+
+    # Core Longitudinal CBT Attributes
+    primary_triggers: Mapped[list] = mapped_column(JSON_TYPE, default=list, nullable=False)
+    dominant_distortions: Mapped[dict] = mapped_column(JSON_TYPE, default=dict, nullable=False)
+    core_beliefs: Mapped[list] = mapped_column(JSON_TYPE, default=list, nullable=False)
+    effective_reframes: Mapped[list] = mapped_column(JSON_TYPE, default=list, nullable=False)
+    active_homework: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    last_session_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    total_sessions_completed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="clinical_profile")
+
+
+class EpisodicTherapyMemory(Base):
+    __tablename__ = "episodic_therapy_memories"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    conversation_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=True, index=True)
+
+    situation_context: Mapped[str] = mapped_column(Text, nullable=False)
+    distorted_thought: Mapped[str] = mapped_column(Text, nullable=False)
+    distortion_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    rational_reframe: Mapped[str] = mapped_column(Text, nullable=False)
+    breakthrough_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="episodic_memories")

@@ -34,6 +34,7 @@ from app.services.response_decision_service import (
     ResponseDecision,
 )
 from app.services.llm_service import llm_service, LLMResult
+from app.services.clinical_memory_service import clinical_memory_service
 
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
 
@@ -152,6 +153,13 @@ def send_message_in_conversation(
         )
         decision: ResponseDecision = response_decision_service.evaluate_decision(decision_context)
 
+        # Step 4.5: Longitudinal Clinical Memory Context Extraction
+        clinical_memory_briefing = clinical_memory_service.build_clinical_memory_briefing(
+            user_id=conversation.user_id,
+            current_text=text,
+            db=db
+        )
+
         # Step 5: Route Response Strategy to Conversational LLM Service
         default_cbt_guidance = None
         if decision.strategy == ResponseStrategy.CBT_SUPPORT:
@@ -165,7 +173,8 @@ def send_message_in_conversation(
             distortion_pred=distortion_pred,
             entities=entities,
             cbt_guidance=default_cbt_guidance,
-            conversation_context=conv_context
+            conversation_context=conv_context,
+            clinical_memory=clinical_memory_briefing
         )
 
         ai_message_content = llm_result.content
@@ -269,6 +278,19 @@ def send_message_in_conversation(
         db.refresh(user_message)
         db.refresh(ai_message)
         db.refresh(ai_response_log)
+
+        # Step 12: Record Turn Insights into Longitudinal Clinical Memory
+        try:
+            clinical_memory_service.record_turn_insight(
+                user_id=conversation.user_id,
+                conversation_id=conversation_id,
+                user_text=text,
+                detected_distortion=distortion_pred.predicted_class,
+                reframe_text=ai_message_content,
+                db=db
+            )
+        except Exception:
+            pass
 
     except Exception as e:
         db.rollback()

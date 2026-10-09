@@ -36,6 +36,7 @@ class LLMInputContract(BaseModel):
     entities: List[str] = []
     cbt_grounding: Optional[Dict[str, Any]] = None
     recent_history: List[Dict[str, str]] = []
+    clinical_memory: Optional[str] = None
 
 
 class PromptBuilder:
@@ -56,7 +57,8 @@ class PromptBuilder:
         distortion_pred: Optional[DistortionPrediction] = None,
         entities: Optional[List[EntityItem]] = None,
         cbt_guidance: Optional[CBTGuidance] = None,
-        conversation_context: Optional[ConversationContext] = None
+        conversation_context: Optional[ConversationContext] = None,
+        clinical_memory: Optional[str] = None
     ) -> LLMInputContract:
         # Extract recent turns (respecting history limits)
         history_list = []
@@ -84,11 +86,17 @@ class PromptBuilder:
             distortion=distortion_dict,
             entities=entities_list,
             cbt_grounding=cbt_dict,
-            recent_history=history_list
+            recent_history=history_list,
+            clinical_memory=clinical_memory
         )
 
     def build_prompt_text(self, contract: LLMInputContract) -> str:
         prompt_parts = []
+
+        # 0. Longitudinal Patient Memory (Clinical Continuity)
+        if contract.clinical_memory:
+            prompt_parts.append(contract.clinical_memory)
+            prompt_parts.append("")
 
         # 1. Recent Conversation History
         if contract.recent_history:

@@ -44,7 +44,8 @@ class LLMService:
         distortion_pred: Optional[DistortionPrediction] = None,
         entities: Optional[List[EntityItem]] = None,
         cbt_guidance: Optional[CBTGuidance] = None,
-        conversation_context: Optional[ConversationContext] = None
+        conversation_context: Optional[ConversationContext] = None,
+        clinical_memory: Optional[str] = None
     ) -> LLMResult:
         """
         Main entry point for generating strategy-guided conversational output.
@@ -77,7 +78,8 @@ class LLMService:
             distortion_pred=distortion_pred,
             entities=entities,
             cbt_guidance=cbt_guidance,
-            conversation_context=conversation_context
+            conversation_context=conversation_context,
+            clinical_memory=clinical_memory
         )
         prompt_text = prompt_builder.build_prompt_text(contract)
 

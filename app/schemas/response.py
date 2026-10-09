@@ -113,3 +113,33 @@ class ConversationMessageResponse(BaseModel):
     analysis: AnalyzeResponse
     decision: ResponseDecisionDetail
     ai_response_log: AIResponseDetailResponse
+
+
+class PatientClinicalProfileResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    primary_triggers: List[str] = []
+    dominant_distortions: Dict[str, int] = {}
+    core_beliefs: List[str] = []
+    effective_reframes: List[str] = []
+    active_homework: Optional[str] = None
+    last_session_summary: Optional[str] = None
+    total_sessions_completed: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class EpisodicTherapyMemoryResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    conversation_id: Optional[uuid.UUID] = None
+    situation_context: str
+    distorted_thought: str
+    distortion_type: str
+    rational_reframe: str
+    breakthrough_notes: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

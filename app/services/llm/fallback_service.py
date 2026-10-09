@@ -9,9 +9,10 @@ class FallbackService:
     """
 
     SAFETY_OVERRIDE_TEXT = (
-        "Your safety and well-being are incredibly important. If you are experiencing "
-        "overwhelming distress or thoughts of self-harm, please reach out immediately to a trusted "
-        "professional or emergency crisis helpline (such as 988 or local emergency services)."
+        "Your safety and the well-being of those you care about are incredibly important. "
+        "If you or someone you know is experiencing overwhelming distress, suicidal thoughts, or thoughts of self-harm, "
+        "please reach out immediately to a trusted professional, doctor, or emergency crisis helpline (such as 988 or local emergency services). "
+        "Support is available 24/7 and you do not have to carry this alone."
     )
 
     def generate_fallback(
@@ -28,7 +29,17 @@ class FallbackService:
             return cbt_guidance.balanced_thought_guidance, cbt_guidance.model_dump()
 
         elif strategy == "exploratory_follow_up":
-            content = "Thank you for sharing what's on your mind. Could you tell me a bit more about what's been happening around this situation?"
+            text_lower = user_text.lower()
+            if any(k in text_lower for k in ["exam", "test", "study", "studies", "result", "grade", "college", "school", "university", "paper", "failed", "marks"]):
+                content = "Failing or having a tough time with an exam can feel really discouraging and stressful. What thoughts have been running through your mind since this happened?"
+            elif any(k in text_lower for k in ["he ", "she ", "friend", "father", "mother", "brother", "sister", "someone", "they"]):
+                content = "It sounds like you are really concerned about them. What has been happening in their situation, and how has this been affecting you?"
+            elif any(k in text_lower for k in ["sad", "depress", "lonely", "alone", "crying", "hopeless", "unhappy", "hurts", "pain"]):
+                content = "I'm really sorry things feel this heavy and difficult right now. What has been weighing on you the most today?"
+            elif any(k in text_lower for k in ["work", "job", "boss", "career", "office", "interview"]):
+                content = "Dealing with challenges at work or career can feel really demanding. Could you tell me what specific part of this situation is causing the most stress?"
+            else:
+                content = "Thank you for sharing what's on your mind. Could you tell me a bit more about what's been happening around this situation?"
             return content, None
 
         elif strategy == "clarification":

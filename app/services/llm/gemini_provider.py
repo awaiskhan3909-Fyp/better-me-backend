@@ -17,7 +17,7 @@ class GeminiLLMProvider(BaseLLMProvider):
 
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
         self.api_key = api_key or GEMINI_API_KEY
-        configured_model = model_name or LLM_MODEL_NAME or "gemini-flash-latest"
+        configured_model = model_name or LLM_MODEL_NAME or "gemini-3.1-flash-lite"
         # Normalize model string for endpoint URI
         if not configured_model.startswith("models/"):
             self.model_uri = f"models/{configured_model}"
@@ -37,8 +37,14 @@ class GeminiLLMProvider(BaseLLMProvider):
 
         start_time = time.time()
         
-        # Primary endpoint attempts (fallback to gemini-flash-latest if specific alias is unavailable)
-        candidate_models = [self.model_uri, "models/gemini-flash-latest", "models/gemini-2.5-flash"]
+        # Primary endpoint attempts (fallback chain across fast, quota-available models)
+        candidate_models = [
+            self.model_uri,
+            "models/gemini-3.1-flash-lite",
+            "models/gemini-3.5-flash-lite",
+            "models/gemini-3.8-flash",
+            "models/gemini-flash-latest"
+        ]
         # Remove duplicates while preserving order
         candidate_models = list(dict.fromkeys(candidate_models))
 

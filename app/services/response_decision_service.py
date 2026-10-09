@@ -106,15 +106,24 @@ class ResponseDecisionService:
         # RULE 1 — SAFETY FIRST (Highest Priority - Critical)
         # -------------------------------------------------------------
         safety_risk = context.safety_result.risk_level.lower()
-        is_self_harm_text = any(phrase in text_lower for phrase in [
-            "hurt myself", "kill myself", "suicide", "end my life", "harm myself", "want to die"
-        ])
-        if safety_risk in ["high risk", "high"] or context.safety_result.needs_safety_alert or is_self_harm_text:
+        
+        # Comprehensive Crisis & Self-Harm Patterns (handles common typos like sucide/suicde, and 1st/3rd person)
+        CRISIS_PATTERNS = [
+            r"\b(?:suicid|sucid|suicd)\w*\b",  # suicide, suicidal, sucide, sucidal, suicde
+            r"\b(?:kill|hurt|harm|cut|poison|hang|shoot|end)\s+(?:my|his|her|their|one'?s)?\s*(?:self|life)\b",
+            r"\b(?:want|wants|wishing)\s+to\s+die\b",
+            r"\b(?:better\s+off\s+dead|tired\s+of\s+living|no\s+reason\s+to\s+live)\b",
+            r"\bend(?:ing)?\s+it\s+all\b",
+            r"\bself[\s\-]harm\w*\b"
+        ]
+        is_crisis_text = any(bool(re.search(pat, text_lower)) for pat in CRISIS_PATTERNS)
+
+        if safety_risk in ["high risk", "high"] or context.safety_result.needs_safety_alert or is_crisis_text:
             return ResponseDecision(
                 strategy=ResponseStrategy.SAFETY_RESPONSE,
                 priority=DecisionPriority.CRITICAL,
                 reason="high_risk_safety_alert",
-                safety_risk_level=context.safety_result.risk_level,
+                safety_risk_level="High Risk" if is_crisis_text else context.safety_result.risk_level,
                 distortion_detected=context.distortion_result.predicted_class
             )
 

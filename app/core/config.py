@@ -39,6 +39,6 @@ CONVERSATION_HISTORY_LIMIT = int(os.getenv("CONVERSATION_HISTORY_LIMIT", 10))
 
 # Conversational LLM Configuration (Google Gemini API)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", None))
-LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "gemini-2.5-flash")
+LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "gemini-3.1-flash-lite")
 LLM_FALLBACK_ENABLED = os.getenv("LLM_FALLBACK_ENABLED", "true").lower() == "true"
 

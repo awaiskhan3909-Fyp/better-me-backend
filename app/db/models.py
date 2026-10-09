@@ -27,6 +27,7 @@ class User(Base):
 
     # Relationships
     conversations: Mapped[List["Conversation"]] = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
+    intake_assessment: Mapped[Optional["UserIntakeAssessment"]] = relationship("UserIntakeAssessment", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 
 class Conversation(Base):
@@ -119,3 +120,23 @@ class AIResponse(Base):
     conversation: Mapped["Conversation"] = relationship("Conversation", back_populates="ai_responses")
     user_message: Mapped[Optional["Message"]] = relationship("Message", foreign_keys=[user_message_id], back_populates="prompt_responses")
     ai_message: Mapped[Optional["Message"]] = relationship("Message", foreign_keys=[ai_message_id], back_populates="generated_ai_response")
+
+
+class UserIntakeAssessment(Base):
+    __tablename__ = "user_intake_assessments"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+
+    # Assessment Answers
+    primary_focus: Mapped[list] = mapped_column(JSON_TYPE, default=list, nullable=False)
+    distress_baseline: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    familiar_distortions: Mapped[list] = mapped_column(JSON_TYPE, default=list, nullable=False)
+    primary_goal: Mapped[str] = mapped_column(String(255), default="Reframing negative thoughts", nullable=False)
+    safety_acknowledged: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="intake_assessment")

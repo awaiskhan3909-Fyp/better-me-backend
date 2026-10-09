@@ -25,6 +25,7 @@ app_file: app.py
 **Better Me Backend** is a high-performance clinical backend engineered with **FastAPI**, **SQLAlchemy**, and **Hugging Face Transformers**. Unlike generic generative AI chatbots, this system acts as a **structured clinical cognitive restructuring engine** based on **Dr. Aaron T. Beck’s Cognitive Behavioral Therapy (CBT)** framework.
 
 It integrates:
+
 1. **Longitudinal Clinical Memory Engine** (`patient_clinical_profiles` & `episodic_therapy_memories`).
 2. **Beck's 5-Column Cognitive Restructuring Studio** (Automated distortion classification & reframing).
 3. **Fine-Tuned Llama-3-8B-Instruct Model** (4-bit QLoRA adapter: [`awaiskhan4039/better-me-cbt-llama3-lora`](https://huggingface.co/awaiskhan4039/better-me-cbt-llama3-lora)).
@@ -72,6 +73,7 @@ graph TD
 ## 🔬 Core Clinical Phases Implemented
 
 ### 🔹 Phase 1: Longitudinal Clinical Memory Engine
+
 Traditional LLM wrappers suffer from **conversational amnesia**—treating the patient as a stranger in every new session. Phase 1 provides stateful continuity:
 
 1. **`patient_clinical_profiles`**:
@@ -89,8 +91,11 @@ Traditional LLM wrappers suffer from **conversational amnesia**—treating the p
 ---
 
 ### 🔹 Phase 2: Beck's 5-Column Cognitive Restructuring Studio
-#### Clinical Justification:
+
+#### Clinical Justification
+
 In Beckian Cognitive Therapy:
+
 $$\text{Situation} \longrightarrow \text{Automatic Thoughts} \longrightarrow \text{Emotional Reaction}$$
 
 Psychological distress is maintained by systematic cognitive errors (**Cognitive Distortions**). Rather than generic unstructured chat, the backend provides endpoints for the rigorous 5-Column Exercise:
@@ -103,7 +108,8 @@ Psychological distress is maintained by systematic cognitive errors (**Cognitive
 | **Col 4** | **Evidence Examination** | Strict separation of objective facts: **Evidence For** vs. **Evidence Against**. |
 | **Col 5** | **Balanced Alternative** | Formulating rational reframed belief with post-exercise distress rating. |
 
-#### 10 Cognitive Distortions Handled:
+#### 10 Cognitive Distortions Handled
+
 1. All-or-Nothing Thinking
 2. Catastrophizing
 3. Mind Reading
@@ -118,6 +124,7 @@ Psychological distress is maintained by systematic cognitive errors (**Cognitive
 ---
 
 ### 🔹 Phase 3: Fine-Tuned Llama-3-8B QLoRA Model
+
 - **Base Foundation Model:** `meta-llama/Meta-Llama-3-8B-Instruct`
 - **Methodology:** Parameter-Efficient Fine-Tuning (PEFT) via **4-bit QLoRA** (`bitsandbytes`).
 - **Target Projection Layers:** `q_proj`, `k_proj`, `v_proj`, `o_proj`, `gate_proj`, `up_proj`, `down_proj`.
@@ -131,6 +138,7 @@ Psychological distress is maintained by systematic cognitive errors (**Cognitive
 ## 📡 REST API Endpoints Specification
 
 ### 1. Authentication & Profiles (`/api/auth`)
+
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `POST` | `/api/auth/register` | Register new patient account with password hashing |
@@ -138,12 +146,14 @@ Psychological distress is maintained by systematic cognitive errors (**Cognitive
 | `GET` | `/api/auth/me/{user_id}` | Fetch profile, intake completion status, and active metadata |
 
 ### 2. Clinical Intake Assessment (`/api/intake`)
+
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `POST` | `/api/intake` | Submit 5-step clinical intake (PHQ-9, GAD-7, triggers, goals) |
 | `GET` | `/api/intake/{user_id}` | Retrieve patient diagnostic baseline scores |
 
 ### 3. Thought Records & Cognitive Restructuring (`/api/thought-records`)
+
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `POST` | `/api/thought-records` | Save a new 5-column cognitive restructuring record |
@@ -151,18 +161,21 @@ Psychological distress is maintained by systematic cognitive errors (**Cognitive
 | `DELETE` | `/api/thought-records/{record_id}` | Delete a thought record |
 
 ### 4. Cognitive & Safety Analysis (`/api/analyze`)
+
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `POST` | `/api/analyze/distortion` | Classify user thought into Beck's 10 cognitive distortions |
 | `POST` | `/api/analyze/safety` | Evaluate text for acute psychiatric risk / self-harm triggers |
 
 ### 5. Therapy Conversations & Memory Recall (`/api/conversations`)
+
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `POST` | `/api/conversations/chat` | Generate clinical Socratic CBT response with memory recall |
 | `GET` | `/api/conversations/history/{user_id}` | Fetch previous session message threads |
 
 ### 6. Analytics & Progress (`/api/analytics`)
+
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/analytics/{user_id}` | Calculate distress reduction delta, distortion frequency, and mood trends |
@@ -222,11 +235,13 @@ CREATE TABLE IF NOT EXISTS thought_records (
 ## 🚀 Setup & Local Execution Guide
 
 ### 1. Prerequisites
+
 - Python $\ge$ 3.10
 - PostgreSQL database or Supabase instance
 - Hugging Face account token
 
 ### 2. Virtual Environment Setup
+
 ```bash
 # Navigate to backend directory
 cd backend
@@ -242,11 +257,13 @@ source venv/bin/activate
 ```
 
 ### 3. Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 4. Configure Environment Variables (`backend/.env`)
+
 ```env
 # Database Connection
 DATABASE_URL=postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres
@@ -265,16 +282,19 @@ ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
 
 ### 5. Run Database Migrations
+
 ```bash
 psql -U postgres -d postgres -f app/db/phase1_clinical_memory_schema.sql
 ```
 
 ### 6. Start the API Server
+
 ```bash
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Interactive API documentation will be available at:
+
 - **Swagger UI:** `http://localhost:8000/docs`
 - **ReDoc:** `http://localhost:8000/redoc`
 
@@ -296,10 +316,10 @@ docker run -p 8000:8000 --env-file .env better-me-backend
 
 ## 🎓 Academic FYP Attribution
 
-* **Project Title:** Better Me — AI Clinical CBT Companion & Longitudinal Memory Engine  
-* **Academic Level:** BS Final Year Project (FYP) 2026  
-* **Project Supervisor:** **Mam Farnaz Akbar**  
-* **Team Members:**  
-  * **Awais Khan** — Lead AI/ML Engineer & Fine-Tuning Specialist  
-  * **Saad Abdullah** — Clinical Memory Engine & Thought Records Architect  
-  * **Ajiya Asif** — Clinical Assessment Pipeline & Security Lead  
+- **Project Title:** Better Me — AI Clinical CBT Companion & Longitudinal Memory Engine  
+- **Academic Level:** BS Final Year Project (FYP) 2026  
+- **Project Supervisor:** **Mam Farnaz Akbar**  
+- **Team Members:**  
+  - **Awais Khan** — Lead AI/ML Engineer & Fine-Tuning Specialist  
+  - **Saad Abdullah** — Clinical Memory Engine & Thought Records Architect  
+  - **Ajiya Asif** — Clinical Assessment Pipeline & Security Lead  

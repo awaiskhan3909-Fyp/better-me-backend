@@ -54,7 +54,15 @@ class SafetyService:
         except Exception as e:
             print(f"[ERROR] Error loading Safety model: {e}")
 
-    def predict(self, text: str) -> SafetyPrediction:
+    def predict(self, text: str, is_vernacular_crisis: bool = False) -> SafetyPrediction:
+        # Zero-tolerance immediate gatekeeper for direct vernacular suicide intent
+        if is_vernacular_crisis:
+            return SafetyPrediction(
+                risk_level="High Risk",
+                needs_safety_alert=True,
+                probabilities={"Safe": 0.0, "Moderate": 0.0, "High Risk": 1.0}
+            )
+
         if not self.loaded:
             self.load_model()
 

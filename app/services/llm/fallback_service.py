@@ -16,6 +16,15 @@ class FallbackService:
         "Support is available 24/7 and you do not have to carry this alone."
     )
 
+    SAFETY_OVERRIDE_ROMAN_URDU_TEXT = (
+        "Aapki hifazat aur zindagi bohot qeemti hai. "
+        "Agar aap shadeed takleef ya khudkushi ke khayalat se guzar rahe hain, "
+        "to barah-e-karam foran kisi doctor ya crisis helpline se rabta karein:\n"
+        "• Pakistan Mental Health Helpline (Umang): 0311-7786264 / 0317-4288898\n"
+        "• International Crisis Helpline: 988\n"
+        "Aap is mushkil waqt me akele nahi hain, madad 24/7 dastiyab hai."
+    )
+
     ROTATING_EXPLORATORY_PROMPTS = [
         "I'm listening and here with you. What specific moment or thought has been feeling the most difficult today?",
         "Thank you for sharing that with me. Could you walk me through what's been happening around this situation?",
@@ -28,10 +37,13 @@ class FallbackService:
         self,
         user_text: str,
         strategy: str,
-        cbt_guidance: Optional[CBTGuidance] = None
+        cbt_guidance: Optional[CBTGuidance] = None,
+        is_roman_urdu: bool = False
     ) -> Tuple[str, Optional[Dict[str, Any]]]:
 
         if strategy == "safety_response":
+            if is_roman_urdu:
+                return self.SAFETY_OVERRIDE_ROMAN_URDU_TEXT, None
             return self.SAFETY_OVERRIDE_TEXT, None
 
         elif strategy == "cbt_support" and cbt_guidance and cbt_guidance.balanced_thought_guidance:

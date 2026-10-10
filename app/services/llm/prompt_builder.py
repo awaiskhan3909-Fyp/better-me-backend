@@ -37,6 +37,7 @@ class LLMInputContract(BaseModel):
     cbt_grounding: Optional[Dict[str, Any]] = None
     recent_history: List[Dict[str, str]] = []
     clinical_memory: Optional[str] = None
+    is_roman_urdu: bool = False
 
 
 class PromptBuilder:
@@ -58,7 +59,8 @@ class PromptBuilder:
         entities: Optional[List[EntityItem]] = None,
         cbt_guidance: Optional[CBTGuidance] = None,
         conversation_context: Optional[ConversationContext] = None,
-        clinical_memory: Optional[str] = None
+        clinical_memory: Optional[str] = None,
+        is_roman_urdu: bool = False
     ) -> LLMInputContract:
         # Extract recent turns (respecting history limits)
         history_list = []
@@ -87,7 +89,8 @@ class PromptBuilder:
             entities=entities_list,
             cbt_grounding=cbt_dict,
             recent_history=history_list,
-            clinical_memory=clinical_memory
+            clinical_memory=clinical_memory,
+            is_roman_urdu=is_roman_urdu
         )
 
     def build_prompt_text(self, contract: LLMInputContract) -> str:
@@ -147,6 +150,16 @@ class PromptBuilder:
             )
             if contract.cbt_grounding and contract.cbt_grounding.get("balanced_thought_guidance"):
                 prompt_parts.append(f"CBT Template Grounding Guidance: {contract.cbt_grounding['balanced_thought_guidance']}")
+
+        # 5. Language Localization Directive (Roman Urdu)
+        if contract.is_roman_urdu:
+            prompt_parts.append(
+                "\n--- CRITICAL LANGUAGE DIRECTIVE: ROMAN URDU ---\n"
+                "The user is speaking in Roman Urdu (Urdu written with English/Latin alphabets).\n"
+                "You MUST write your entire response in empathetic, comforting, natural Roman Urdu (Latin script Urdu).\n"
+                "Do NOT respond in English. Do NOT use robotic or overly academic vocabulary. "
+                "Use gentle, supportive conversational Roman Urdu (e.g., 'Aapka aisa mehsoos karna samajh aata hai...', 'Mushkil waqt me hum aksar aisi batein sochne lagte hain, lekin...')."
+            )
 
         prompt_parts.append("\nGenerate the response now:")
         return "\n".join(prompt_parts)

@@ -57,14 +57,17 @@ class LLMService:
         entities: Optional[List[EntityItem]] = None,
         cbt_guidance: Optional[CBTGuidance] = None,
         conversation_context: Optional[ConversationContext] = None,
-        clinical_memory: Optional[str] = None
+        clinical_memory: Optional[str] = None,
+        is_roman_urdu: bool = False
     ) -> LLMResult:
         """
         Main entry point for generating strategy-guided conversational output.
         """
         # 1. STRICT SAFETY OVERRIDE GATE
         if strategy == "safety_response":
-            fallback_text, _ = fallback_service.generate_fallback(user_text, strategy, cbt_guidance)
+            fallback_text, _ = fallback_service.generate_fallback(
+                user_text, strategy, cbt_guidance, is_roman_urdu=is_roman_urdu
+            )
             return LLMResult(
                 content=fallback_text,
                 response_source="safety_override_engine",
@@ -91,7 +94,8 @@ class LLMService:
             entities=entities,
             cbt_guidance=cbt_guidance,
             conversation_context=conversation_context,
-            clinical_memory=clinical_memory
+            clinical_memory=clinical_memory,
+            is_roman_urdu=is_roman_urdu
         )
         prompt_text = prompt_builder.build_prompt_text(contract)
 
@@ -150,7 +154,8 @@ class LLMService:
         fallback_content, fallback_cbt_data = fallback_service.generate_fallback(
             user_text=user_text,
             strategy=strategy,
-            cbt_guidance=cbt_guidance
+            cbt_guidance=cbt_guidance,
+            is_roman_urdu=is_roman_urdu
         )
 
         return LLMResult(

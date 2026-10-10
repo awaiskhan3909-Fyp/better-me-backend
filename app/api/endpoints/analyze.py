@@ -11,6 +11,7 @@ from app.services.response_decision_service import (
     ResponseStrategy,
 )
 from app.services.llm_service import llm_service, LLMResult
+from app.services.language_service import language_service
 
 router = APIRouter()
 
@@ -20,19 +21,27 @@ def analyze_text(payload: AnalyzeRequest):
     """
     Stateless Analysis Endpoint:
     1. Validates input text.
-    2. Runs Safety, Distortion, and NER prediction models.
-    3. Evaluates Response Strategy via ResponseDecisionService.
-    4. Routes through LLM Service (grounded by Response Strategy).
-    5. Returns decision-guided response payload.
+    2. Runs Language Normalization for Roman Urdu.
+    3. Runs Safety, Distortion, and NER prediction models.
+    4. Evaluates Response Strategy via ResponseDecisionService.
+    5. Routes through LLM Service (grounded by Response Strategy & Roman Urdu Directive).
+    6. Returns decision-guided response payload.
     """
     text = payload.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Input text cannot be empty.")
 
+    # 0. Language Normalization (Roman Urdu / Vernacular)
+    lang_result = language_service.process_input(text)
+    clinical_text = lang_result.english_text if lang_result.is_roman_urdu else text
+
     # 1. Run safety, distortion, and NER prediction models
-    safety_pred = safety_service.predict(text)
-    distortion_pred = distortion_service.predict(text)
-    entities = ner_service.extract_entities(text)
+    safety_pred = safety_service.predict(
+        clinical_text,
+        is_vernacular_crisis=lang_result.is_vernacular_crisis
+    )
+    distortion_pred = distortion_service.predict(clinical_text)
+    entities = ner_service.extract_entities(clinical_text)
 
     # 2. Evaluate Response Strategy via Response Decision Engine
     decision_context = DecisionContext(
@@ -47,7 +56,7 @@ def analyze_text(payload: AnalyzeRequest):
     # 3. Route to LLM Generation Layer
     default_cbt_guidance = None
     if decision.strategy == ResponseStrategy.CBT_SUPPORT:
-        default_cbt_guidance = cbt_service.get_cbt_guidance(text, distortion_pred.predicted_class)
+        default_cbt_guidance = cbt_service.get_cbt_guidance(clinical_text, distortion_pred.predicted_class)
 
     llm_result: LLMResult = llm_service.generate_response(
         user_text=text,
@@ -57,7 +66,8 @@ def analyze_text(payload: AnalyzeRequest):
         distortion_pred=distortion_pred,
         entities=entities,
         cbt_guidance=default_cbt_guidance,
-        conversation_context=None
+        conversation_context=None,
+        is_roman_urdu=lang_result.is_roman_urdu
     )
 
     ai_message_content = llm_result.content

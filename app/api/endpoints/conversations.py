@@ -35,6 +35,7 @@ from app.services.response_decision_service import (
 )
 from app.services.llm_service import llm_service, LLMResult
 from app.services.clinical_memory_service import clinical_memory_service
+from app.services.language_service import language_service
 
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
 
@@ -137,11 +138,19 @@ def send_message_in_conversation(
             commit=False
         )
 
+        # Step 2.5: Roman Urdu & Language Intelligence Normalization
+        lang_result = language_service.process_input(text)
+        clinical_text = lang_result.english_text if lang_result.is_roman_urdu else text
+
         # Step 3: Run prediction models (Safety, Distortion, NER, CBT Guidance)
-        safety_pred = safety_service.predict(text)
-        distortion_pred = distortion_service.predict(text)
-        entities = ner_service.extract_entities(text)
-        cbt_guidance = cbt_service.get_cbt_guidance(text, distortion_pred.predicted_class)
+        # Using clinical_text for BERT classifiers to guarantee high accuracy
+        safety_pred = safety_service.predict(
+            clinical_text,
+            is_vernacular_crisis=lang_result.is_vernacular_crisis
+        )
+        distortion_pred = distortion_service.predict(clinical_text)
+        entities = ner_service.extract_entities(clinical_text)
+        cbt_guidance = cbt_service.get_cbt_guidance(clinical_text, distortion_pred.predicted_class)
 
         # Step 4: Evaluate Response Strategy via Response Decision Engine
         decision_context = DecisionContext(
@@ -163,7 +172,7 @@ def send_message_in_conversation(
         # Step 5: Route Response Strategy to Conversational LLM Service
         default_cbt_guidance = None
         if decision.strategy == ResponseStrategy.CBT_SUPPORT:
-            default_cbt_guidance = cbt_service.get_cbt_guidance(text, distortion_pred.predicted_class)
+            default_cbt_guidance = cbt_service.get_cbt_guidance(clinical_text, distortion_pred.predicted_class)
 
         llm_result: LLMResult = llm_service.generate_response(
             user_text=text,
@@ -174,7 +183,8 @@ def send_message_in_conversation(
             entities=entities,
             cbt_guidance=default_cbt_guidance,
             conversation_context=conv_context,
-            clinical_memory=clinical_memory_briefing
+            clinical_memory=clinical_memory_briefing,
+            is_roman_urdu=lang_result.is_roman_urdu
         )
 
         ai_message_content = llm_result.content

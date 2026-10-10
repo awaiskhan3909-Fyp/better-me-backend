@@ -102,12 +102,16 @@ class LLMService:
         # 3. Check Provider Availability & Execute LLM Generation
         if self.provider.is_available():
             try:
-                provider_resp = self.provider.generate(
-                    prompt=prompt_text,
-                    system_instruction=prompt_builder.system_instruction,
-                    temperature=0.7,
-                    max_tokens=512
-                )
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(
+                        self.provider.generate,
+                        prompt=prompt_text,
+                        system_instruction=prompt_builder.system_instruction,
+                        temperature=0.7,
+                        max_tokens=150
+                    )
+                    provider_resp = future.result(timeout=15.0)
 
                 # Validate LLM Output
                 is_valid, sanitized_text, failure_reason = response_parser.validate_and_sanitize(

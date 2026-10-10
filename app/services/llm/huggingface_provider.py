@@ -86,7 +86,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 "text-generation",
                 model=model,
                 tokenizer=tokenizer,
-                max_new_tokens=512,
+                max_new_tokens=150,
                 temperature=0.7,
                 do_sample=True,
             )
@@ -108,7 +108,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
         prompt: str,
         system_instruction: str,
         temperature: float = 0.7,
-        max_tokens: int = 512
+        max_tokens: int = 150
     ) -> ProviderLLMResponse:
         start_time = time.time()
 
@@ -154,7 +154,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
             }
         }
 
-        response = requests.post(api_url, headers=headers, json=payload, timeout=30)
+        response = requests.post(api_url, headers=headers, json=payload, timeout=15)
         if response.status_code != 200:
             raise RuntimeError(f"Hugging Face API returned status {response.status_code}: {response.text}")
 

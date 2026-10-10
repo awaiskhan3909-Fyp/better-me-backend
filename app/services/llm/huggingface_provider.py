@@ -31,6 +31,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
         self.hf_token = hf_token or HF_TOKEN
         self.use_local_pipeline = use_local_pipeline
         self.local_pipeline = None
+        self.init_error = None
 
         # Auto-detect CUDA GPU environment (e.g. Google Colab Tesla T4)
         if not self.use_local_pipeline:
@@ -85,10 +86,13 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 temperature=0.7,
                 do_sample=True,
             )
+            self.init_error = None
             logger.info("Local HuggingFace 4-bit pipeline ready!")
         except Exception as e:
+            self.init_error = str(e)
             logger.warning(f"Could not initialize local pipeline: {e}. Falling back to remote HF API.")
             self.local_pipeline = None
+
 
     def is_available(self) -> bool:
         if self.local_pipeline is not None:

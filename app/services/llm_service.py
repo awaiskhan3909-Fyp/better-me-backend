@@ -145,46 +145,6 @@ class LLMService:
         else:
             fallback_reason = "provider_unavailable"
 
-        # 3b. Secondary Cloud Backup (Google Gemini) before static template fallback
-        if isinstance(self.provider, HuggingFaceLLMProvider):
-            gemini_backup = GeminiLLMProvider()
-            if gemini_backup.is_available():
-                try:
-                    logger.info("HF provider unavailable or errored. Delegating to Secondary Gemini Backup...")
-                    backup_resp = gemini_backup.generate(
-                        prompt=prompt_text,
-                        system_instruction=prompt_builder.system_instruction,
-                        temperature=0.7,
-                        max_tokens=512
-                    )
-                    b_valid, b_text, _ = response_parser.validate_and_sanitize(
-                        backup_resp.raw_content,
-                        strategy
-                    )
-                    if b_valid:
-                        cbt_data_json = None
-                        if strategy == "cbt_support" and cbt_guidance:
-                            cbt_data_json = cbt_guidance.model_dump()
-                            cbt_data_json["balanced_thought_guidance"] = b_text
-
-                        return LLMResult(
-                            content=b_text,
-                            response_source="conversational_llm_backup",
-                            response_type="therapeutic_reframe" if strategy == "cbt_support" else "conversational_dialogue",
-                            model_name=backup_resp.model_name,
-                            cbt_data=cbt_data_json,
-                            llm_metadata={
-                                "prompt_version": PROMPT_VERSION,
-                                "provider": "gemini_backup",
-                                "model": backup_resp.model_name,
-                                "strategy": strategy,
-                                "fallback_used": False,
-                                "latency_ms": backup_resp.latency_ms,
-                            }
-                        )
-                except Exception as be:
-                    logger.warning(f"Secondary Gemini backup also failed: {be}")
-
 
         # 4. Fallback Execution Path
         fallback_content, fallback_cbt_data = fallback_service.generate_fallback(

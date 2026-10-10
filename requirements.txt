@@ -11,4 +11,8 @@ transformers>=4.30.0
 spacy>=3.5.0
 google-genai>=2.0.0
 huggingface_hub>=0.20.0
+peft>=0.7.0
+bitsandbytes>=0.41.0
+accelerate>=0.25.0
 gradio>=4.0.0
+

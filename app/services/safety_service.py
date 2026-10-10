@@ -36,10 +36,10 @@ class SafetyService:
     # Academic and routine distress markers (Distress/Distortion, NOT suicide)
     ROUTINE_DISTRESS_PATTERNS = [
         re.compile(r"\b(?:fail(?:ed|ing|ure)?|flunk(?:ed)?)\b", re.IGNORECASE),
-        re.compile(r"\b(?:exam|test|paper|marks|result|interview|grades|admission)\b", re.IGNORECASE),
-        re.compile(r"\b(?:sad|upset|lonely|stressed|anxious|tired|bored|frustrated)\b", re.IGNORECASE),
-        re.compile(r"\b(?:lost\s+my\s+job|work\s+stress|breakup|fight)\b", re.IGNORECASE),
-        re.compile(r"\b(?:nobody\s+likes\s+me|i\s+feel\s+useless)\b", re.IGNORECASE),
+        re.compile(r"\b(?:exam|test|paper|marks|result|interview|grades|admission|parhai)\b", re.IGNORECASE),
+        re.compile(r"\b(?:sad|upset|lonely|alone|stressed|anxious|tired|bored|frustrated|worthless|hopeless|stuck|incompetent|disaster|mistake)\b", re.IGNORECASE),
+        re.compile(r"\b(?:lost\s+my\s+job|job|career|work\s+stress|breakup|partner|boss|yelled|fight|naukri|kharcha|reject(?:ed)?)\b", re.IGNORECASE),
+        re.compile(r"\b(?:nobody\s+likes\s+me|i\s+feel\s+useless|everyone\s+is\s+judging|ignore|himmat|qismat|mustaqbil)\b", re.IGNORECASE),
     ]
 
     def __init__(self):

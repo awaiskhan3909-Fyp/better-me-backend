@@ -53,10 +53,16 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
         """Loads 4-bit model directly on available GPU."""
         try:
             import torch
-            from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+            from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, BitsAndBytesConfig
 
             logger.info(f"Loading local 4-bit pipeline for '{self.repo_id}' on CUDA...")
             tokenizer = AutoTokenizer.from_pretrained(self.repo_id, token=self.hf_token)
+
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_quant_type="nf4"
+            )
 
             model = None
             try:
@@ -64,8 +70,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 model = AutoPeftModelForCausalLM.from_pretrained(
                     self.repo_id,
                     token=self.hf_token,
-                    torch_dtype=torch.float16,
-                    load_in_4bit=True,
+                    quantization_config=quantization_config,
                     device_map="auto"
                 )
             except Exception as peft_err:
@@ -73,8 +78,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 model = AutoModelForCausalLM.from_pretrained(
                     self.repo_id,
                     token=self.hf_token,
-                    torch_dtype=torch.float16,
-                    load_in_4bit=True,
+                    quantization_config=quantization_config,
                     device_map="auto"
                 )
 

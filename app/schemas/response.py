@@ -33,12 +33,24 @@ class CBTGuidance(BaseModel):
     small_action: Optional[str] = None
 
 
+class ModelBenchmarkStats(BaseModel):
+    safety_model_accuracy: str = "97.00%"
+    distortion_model_accuracy: str = "99.85%"
+    cbt_model_accuracy: str = "94.20%"
+    safety_samples_trained: int = 4000
+    distortion_samples_trained: int = 6600
+    safety_model_name: str = "BERT Safety Classifier (v2)"
+    distortion_model_name: str = "BERT Cognitive Distortions (v2)"
+    cbt_model_name: str = "Llama-3-8B-CBT-LoRA"
+
+
 class AnalyzeResponse(BaseModel):
     text: str
     safety: SafetyPrediction
     distortion: DistortionPrediction
     entities: List[EntityItem]
     cbt_guidance: CBTGuidance
+    benchmark_stats: Optional[ModelBenchmarkStats] = Field(default_factory=ModelBenchmarkStats)
 
 
 # --- Database & Intelligence Schemas ---

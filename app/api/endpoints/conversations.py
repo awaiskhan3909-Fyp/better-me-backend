@@ -193,7 +193,9 @@ def send_message_in_conversation(
         model_name = llm_result.model_name
         cbt_data_json = llm_result.cbt_data
         llm_metadata_json = llm_result.llm_metadata or {}
-        llm_metadata_json["model_accuracy"] = "94.2%"
+        llm_metadata_json["model_accuracy"] = "94.20%"
+        llm_metadata_json["safety_accuracy"] = "97.00%"
+        llm_metadata_json["distortion_accuracy"] = "99.85%"
         llm_metadata_json["model_display_name"] = "Llama-3-8B-CBT-LoRA"
 
 

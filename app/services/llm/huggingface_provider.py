@@ -50,12 +50,35 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
 
 
     def _init_local_pipeline(self):
-        """Loads 4-bit model directly on available GPU."""
+        """Loads 4-bit model directly on available GPU with Unsloth optimization."""
+        # 1. Try Unsloth FastLanguageModel first (Ultra-fast, native format for this trained model)
+        try:
+            import torch
+            from unsloth import FastLanguageModel
+            logger.info(f"Unsloth detected on CUDA! Loading fine-tuned 4-bit LLaMA-3 LoRA '{self.repo_id}' directly...")
+            model, tokenizer = FastLanguageModel.from_pretrained(
+                model_name=self.repo_id,
+                max_seq_length=2048,
+                dtype=None,
+                load_in_4bit=True,
+                token=self.hf_token
+            )
+            FastLanguageModel.for_inference(model)
+            self.unsloth_model = model
+            self.unsloth_tokenizer = tokenizer
+            self.local_pipeline = "unsloth"
+            self.init_error = None
+            logger.info("✅ Unsloth 4-bit LLaMA-3 LoRA model ready on GPU!")
+            return
+        except Exception as unsloth_err:
+            logger.info(f"Unsloth initialization not available ({unsloth_err}). Trying standard transformers pipeline...")
+
+        # 2. Fallback to standard Hugging Face Transformers + PEFT
         try:
             import torch
             from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, BitsAndBytesConfig
 
-            logger.info(f"Loading local 4-bit pipeline for '{self.repo_id}' on CUDA...")
+            logger.info(f"Loading local 4-bit pipeline for '{self.repo_id}' on CUDA via standard transformers...")
             tokenizer = AutoTokenizer.from_pretrained(self.repo_id, token=self.hf_token)
 
             quantization_config = BitsAndBytesConfig(
@@ -91,7 +114,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 do_sample=True,
             )
             self.init_error = None
-            logger.info("Local HuggingFace 4-bit pipeline ready!")
+            logger.info("✅ Standard HuggingFace 4-bit pipeline ready!")
         except Exception as e:
             self.init_error = str(e)
             logger.warning(f"Could not initialize local pipeline: {e}. Falling back to remote HF API.")
@@ -112,14 +135,48 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
     ) -> ProviderLLMResponse:
         start_time = time.time()
 
-        # Format full prompt with system instruction
-        full_prompt = f"System: {system_instruction}\n\n{prompt}"
+        # Format full prompt with the fine-tuned Alpaca CBT training format
+        alpaca_prompt = (
+            f"Below is an instruction that describes a clinical CBT therapeutic task, paired with an input containing the patient's distressed thought. Write a response that provides empathetic validation, Socratic cognitive restructuring, and a balanced reframe.\n\n"
+            f"### Instruction:\n{system_instruction}\n\n"
+            f"### Input:\n{prompt}\n\n"
+            f"### Response:\n"
+        )
 
-        # 1. Local Pipeline Execution
-        if self.local_pipeline is not None:
+        # 1. Unsloth Native GPU Execution
+        if getattr(self, "unsloth_model", None) is not None and getattr(self, "unsloth_tokenizer", None) is not None:
+            try:
+                inputs = self.unsloth_tokenizer([alpaca_prompt], return_tensors="pt").to("cuda")
+                outputs = self.unsloth_model.generate(
+                    **inputs,
+                    max_new_tokens=max_tokens,
+                    temperature=temperature,
+                    do_sample=True,
+                    pad_token_id=self.unsloth_tokenizer.eos_token_id
+                )
+                generated_full = self.unsloth_tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+                if "### Response:" in generated_full:
+                    generated_text = generated_full.split("### Response:")[-1].strip()
+                else:
+                    generated_text = generated_full.strip()
+
+                latency_ms = (time.time() - start_time) * 1000
+                return ProviderLLMResponse(
+                    raw_content=generated_text,
+                    prompt_tokens=len(prompt.split()),
+                    completion_tokens=len(generated_text.split()),
+                    latency_ms=latency_ms,
+                    model_name=self.repo_id,
+                    provider_name="unsloth_llama3_lora_gpu"
+                )
+            except Exception as unsloth_gen_err:
+                logger.error(f"Unsloth generation error: {unsloth_gen_err}")
+
+        # 2. Local Pipeline Execution (Standard Transformers)
+        if self.local_pipeline is not None and self.local_pipeline != "unsloth":
             try:
                 outputs = self.local_pipeline(
-                    full_prompt,
+                    alpaca_prompt,
                     max_new_tokens=max_tokens,
                     temperature=temperature,
                     do_sample=True,

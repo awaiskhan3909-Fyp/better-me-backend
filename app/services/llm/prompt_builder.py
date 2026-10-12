@@ -133,9 +133,13 @@ class PromptBuilder:
             )
         elif contract.strategy == "exploratory_follow_up":
             prompt_parts.append(
-                "DIRECTIVE: Acknowledge what the user actually shared, validate their feelings gently, "
-                "and ask ONE useful, open-ended follow-up question to invite them to tell you more about the situation. "
-                "Do NOT force premature CBT reframing or diagnostic labels."
+                "DIRECTIVE (CLINICAL SOCRATIC EXPLORATION — GUIDED DISCOVERY):\n"
+                "Act as a professional CBT therapist in the early exploration phase:\n"
+                "1. Empathy & Validation: Gently validate their painful feeling without judging or immediately lecturing.\n"
+                "2. Socratic Questions (Do NOT jump to final solutions yet):\n"
+                "   - If they just shared the problem: Ask gently how long they've felt this way and what specific situation triggered it ('Ye masla kab se pesh aa raha hai?').\n"
+                "   - If they shared context/failure: Inquire about what they believe the root cause was, and what they are thinking about the future ('Aapko kya lagta hai iski asal wajah kya thi? Aur ab agay ke baare mein aapne kya socha hai?').\n"
+                "3. Tone: Warm, deeply conversational, curiosity-driven. Target Length: 2-3 short, empathetic sentences."
             )
         elif contract.strategy == "clarification":
             prompt_parts.append(
@@ -144,9 +148,12 @@ class PromptBuilder:
             )
         elif contract.strategy == "cbt_support":
             prompt_parts.append(
-                "DIRECTIVE: Generate a structured, empathetic CBT response that gently reflects their thought, "
-                "offers a balanced alternative perspective grounded in the CBT template material, and suggests a small next step. "
-                "Target Length: Moderate (3-4 sentences)."
+                "DIRECTIVE (CLINICAL CBT ACTION PLAN & COGNITIVE RESTRUCTURING):\n"
+                "The user is ready for therapeutic restructuring or has asked for a solution/hal:\n"
+                "1. Decouple Event from Worth: Reframe their distress — an event (like failing an exam) does not define their identity or whole life.\n"
+                "2. Balanced Perspective (Reality Testing): Ground them in evidence and alternatives.\n"
+                "3. Concrete 3-Step Action Plan: Provide practical next steps (e.g. 1. Calming breath, 2. Objective review, 3. Micro-step for today).\n"
+                "Target Length: Moderate (3-4 compassionate, structured sentences)."
             )
             if contract.cbt_grounding and contract.cbt_grounding.get("balanced_thought_guidance"):
                 prompt_parts.append(f"CBT Template Grounding Guidance: {contract.cbt_grounding['balanced_thought_guidance']}")

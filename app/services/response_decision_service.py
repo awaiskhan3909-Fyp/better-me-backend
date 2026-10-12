@@ -65,31 +65,36 @@ class ResponseDecisionService:
 
     NON_DISTORTIONS = {"none", "normal", "no distortion", "general", "no_distortion", "null"}
 
-    ABSOLUTE_MARKERS = {
+    CBT_EVIDENCE_WORDS = {
         "never", "always", "every", "everyone", "nobody", "nothing", "everything",
         "completely", "totally", "entirely", "impossible", "useless", "worthless",
-        "ruined", "failed at life", "ruined forever"
+        "ruined", "ruins", "failure", "unfit", "hopeless", "pointless", "disaster",
+        "tabah", "barbaad", "khatam", "bekaar", "mayoos", "failed at life", "ruined forever"
     }
 
     DISTORTED_LINK_PATTERNS = [
-        r"\bso\s+(i\s+will|obviously|which\s+means|this\s+proves|my\s+life|our\s+friendship|i\s+know|everyone)\b",
-        r"\b(know|sure)\s+(i\s+will\s+never|they\s+all|nobody\s+wants|everyone\s+hates)\b",
-        r"\b(obviously|clearly)\s+(everyone|nobody|my\s+life|our\s+friendship|over)\b",
-        r"\b(i\s+am|im)\s+a\s+(failure|disaster|loser|useless\s+person)\b",
-        r"\b(ruined|over)\s+forever\b"
+        r"\bnot\s+fit\s+(?:in|for)\s+this\s+world\b",
+        r"\bdont\s+belong\s+(?:in|to)\s+this\s+world\b",
+        r"\b(?:my\s+life|future)\s+(?:is\s+)?(?:ruined|ruins|over|destroyed)\b",
+        r"\bi\s+think\s+my\s+life\s+(?:ruins|is\s+ruined)\b",
+        r"\b(?:failed|fail)\s+(?:at|in)\s+life\b",
+        r"\bno\s+hope\s+for\s+(?:me|future|my\s+life)\b",
+        r"\b(?:dunya|zindagi)\s+(?:ke\s+qabil|me\s+nahi|tabah|barbaad)\b",
+        r"\bso\s+(?:i\s+will|obviously|which\s+means|this\s+proves|my\s+life|our\s+friendship|i\s+know|everyone)\b",
+        r"\b(?:know|sure)\s+(?:i\s+will\s+never|they\s+all|nobody\s+wants|everyone\s+hates)\b",
+        r"\b(?:obviously|clearly)\s+(?:everyone|nobody|my\s+life|our\s+friendship|over)\b",
+        r"\b(?:i\s+am|im)\s+a\s+(?:failure|disaster|loser|useless\s+person)\b",
+        r"\b(?:ruined|over)\s+forever\b"
     ]
 
     def has_cbt_evidence(self, text_lower: str, words: List[str]) -> bool:
         """
         Evaluates whether the user text contains explicit cognitive distortion structure,
-        such as absolute statements, distorted causal claims, or catastrophizing links.
-        Merely expressing an emotion or describing an event does NOT pass the gate.
+        such as absolute statements, distorted causal claims, existential defectiveness, or catastrophizing links.
         """
-        # Check absolute markers
-        if any(marker in words for marker in ["never", "always", "nobody", "everyone", "nothing", "everything", "useless", "worthless"]):
+        if any(marker in words for marker in self.CBT_EVIDENCE_WORDS):
             return True
 
-        # Check explicit distorted link regex patterns
         for pattern in self.DISTORTED_LINK_PATTERNS:
             if re.search(pattern, text_lower):
                 return True
@@ -162,6 +167,26 @@ class ResponseDecisionService:
             )
 
         # -------------------------------------------------------------
+        # RULE 2C — SOLUTION & ACTION-SEEKING REQUESTS IN THERAPY
+        # -------------------------------------------------------------
+        SOLUTION_REQUEST_PATTERNS = [
+            r"\b(?:tell\s+me\s+(?:the\s+)?solution|what\s+is\s+the\s+solution|solution\s+of\s+this)\b",
+            r"\b(?:what\s+(?:should|can)\s+i\s+do|how\s+(?:can|do)\s+i\s+(?:fix|solve|handle|deal\s+with)\s+this)\b",
+            r"\b(?:give\s+me\s+(?:a\s+)?solution|how\s+to\s+(?:fix|solve|recover|overcome))\b",
+            r"\b(?:iska\s+(?:koi\s+)?hal|kya\s+karun|kya\s+karein|hal\s+batao|solution\s+batao|kuch\s+mashwara|koi\s+rasta)\b"
+        ]
+        is_solution_request = any(bool(re.search(pat, text_lower)) for pat in SOLUTION_REQUEST_PATTERNS)
+
+        if is_solution_request:
+            return ResponseDecision(
+                strategy=ResponseStrategy.CBT_SUPPORT,
+                priority=DecisionPriority.HIGH,
+                reason="solution_seeking_intervention",
+                distortion_detected=context.distortion_result.predicted_class,
+                safety_risk_level=context.safety_result.risk_level
+            )
+
+        # -------------------------------------------------------------
         # RULE 3 — CONTEXT & EVIDENCE GATE FOR CBT SUPPORT
         # Signal (Classifier) + Evidence (Explicit Distorted Thought Pattern)
         # -------------------------------------------------------------
@@ -176,7 +201,13 @@ class ResponseDecisionService:
 
         has_evidence = self.has_cbt_evidence(text_lower, words)
 
-        if is_signal_present and has_evidence:
+        has_active_history = bool(
+            context.conversation_context
+            and getattr(context.conversation_context, "has_history", False)
+            and getattr(context.conversation_context, "history_count", 0) >= 2
+        )
+
+        if is_signal_present and (has_evidence or confidence >= 0.55 or has_active_history):
             return ResponseDecision(
                 strategy=ResponseStrategy.CBT_SUPPORT,
                 priority=DecisionPriority.HIGH,

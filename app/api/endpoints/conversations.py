@@ -171,7 +171,7 @@ def send_message_in_conversation(
 
         # Step 5: Route Response Strategy to Conversational LLM Service
         default_cbt_guidance = None
-        if decision.strategy == ResponseStrategy.CBT_SUPPORT:
+        if decision.strategy == ResponseStrategy.CBT_SUPPORT or (distortion_pred and distortion_pred.predicted_class not in ["None", "Normal", "no distortion"]):
             default_cbt_guidance = cbt_service.get_cbt_guidance(clinical_text, distortion_pred.predicted_class)
 
         llm_result: LLMResult = llm_service.generate_response(

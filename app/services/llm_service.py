@@ -159,6 +159,8 @@ class LLMService:
             user_text=user_text,
             strategy=strategy,
             cbt_guidance=cbt_guidance,
+            conversation_context=conversation_context,
+            distortion_pred=distortion_pred,
             is_roman_urdu=is_roman_urdu
         )
 

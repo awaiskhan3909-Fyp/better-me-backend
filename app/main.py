@@ -19,6 +19,16 @@ async def lifespan(app: FastAPI):
     print("=" * 50)
     distortion_service.load_model()
     safety_service.load_model()
+    
+    # Preload Fine-Tuned LLaMA-3 CBT LoRA model into GPU memory
+    try:
+        from app.services.llm_service import llm_service
+        if hasattr(llm_service.provider, "_init_local_pipeline"):
+            print("[INFO] Initializing Fine-Tuned LLaMA-3 CBT LoRA on GPU...")
+            llm_service.provider._init_local_pipeline()
+    except Exception as e:
+        print(f"[WARNING] LLM GPU initialization notice: {e}")
+
     print("=" * 50)
     print("[SUCCESS] All AI models loaded & ready for requests!")
     print("=" * 50 + "\n")

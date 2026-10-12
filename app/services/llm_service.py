@@ -111,7 +111,7 @@ class LLMService:
                         temperature=0.7,
                         max_tokens=150
                     )
-                    provider_resp = future.result(timeout=15.0)
+                    provider_resp = future.result(timeout=45.0)
 
                 # Validate LLM Output
                 is_valid, sanitized_text, failure_reason = response_parser.validate_and_sanitize(

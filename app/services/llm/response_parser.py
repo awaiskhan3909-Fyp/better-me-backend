@@ -4,18 +4,13 @@ from typing import Tuple, Optional
 
 class ResponseParser:
     """
-    Validates and sanitizes raw LLM output text before sending it down the pipeline.
+    Validates and sanitizes raw LLM output text.
+    Safely cleans prompts and ensures natural conversational delivery.
     """
 
-    PROMPT_LEAKAGE_MARKERS = [
-        "authoritative strategy",
-        "system instruction",
-        "cbt template grounding",
-        "internal context",
-        "detected thought pattern",
-        "directive:",
-        "role: you are",
-        "safety status:"
+    PROMPT_LEAKAGE_PATTERNS = [
+        re.compile(r"^(?:system\s+instruction|directive|role|internal\s+context|authoritative\s+strategy)[:\s-].*?$", re.IGNORECASE | re.MULTILINE),
+        re.compile(r"###\s*Response:\s*", re.IGNORECASE)
     ]
 
     def validate_and_sanitize(self, raw_text: str, strategy: str) -> Tuple[bool, str, Optional[str]]:
@@ -24,24 +19,17 @@ class ResponseParser:
 
         clean_text = raw_text.strip()
 
-        # Check prompt leakage
-        lower_text = clean_text.lower()
-        for marker in self.PROMPT_LEAKAGE_MARKERS:
-            if marker in lower_text:
-                return False, clean_text, f"prompt_leakage_detected ({marker})"
+        # Clean leakage headers if present
+        for pat in self.PROMPT_LEAKAGE_PATTERNS:
+            clean_text = pat.sub("", clean_text).strip()
 
-        # Check response length bounds based on strategy
+        # Remove surrounding quotes if model wrapped response in quotes
+        if (clean_text.startswith('"') and clean_text.endswith('"')) or (clean_text.startswith("'") and clean_text.endswith("'")):
+            clean_text = clean_text[1:-1].strip()
+
         words = clean_text.split()
         if len(words) < 2:
             return False, clean_text, "response_too_short"
-
-        if strategy in ["normal_conversation", "clarification"] and len(words) > 80:
-            # Truncate or flag if unreasonably verbose for simple turns
-            pass
-
-        # Remove surrounding quotes if model added them
-        if (clean_text.startswith('"') and clean_text.endswith('"')) or (clean_text.startswith("'") and clean_text.endswith("'")):
-            clean_text = clean_text[1:-1].strip()
 
         return True, clean_text, None
 

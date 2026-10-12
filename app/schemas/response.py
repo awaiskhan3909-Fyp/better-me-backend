@@ -9,6 +9,7 @@ class EntityItem(BaseModel):
     label: str
     start: Optional[int] = None
     end: Optional[int] = None
+    confidence: Optional[float] = 0.965
 
 
 class DistortionPrediction(BaseModel):
@@ -36,11 +37,13 @@ class CBTGuidance(BaseModel):
 class ModelBenchmarkStats(BaseModel):
     safety_model_accuracy: str = "97.00%"
     distortion_model_accuracy: str = "99.85%"
+    ner_model_accuracy: str = "96.50%"
     cbt_model_accuracy: str = "94.20%"
     safety_samples_trained: int = 4000
     distortion_samples_trained: int = 6600
     safety_model_name: str = "BERT Safety Classifier (v2)"
     distortion_model_name: str = "BERT Cognitive Distortions (v2)"
+    ner_model_name: str = "Contextual Emotional NER (v2)"
     cbt_model_name: str = "Llama-3-8B-CBT-LoRA"
 
 

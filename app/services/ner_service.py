@@ -61,7 +61,8 @@ class NERService:
                             text=match.group(0),
                             label=label,
                             start=match.start(),
-                            end=match.end()
+                            end=match.end(),
+                            confidence=0.975
                         )
                     )
 

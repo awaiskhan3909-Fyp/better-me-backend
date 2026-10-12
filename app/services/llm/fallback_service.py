@@ -120,9 +120,59 @@ class FallbackService:
             return self.SAFETY_OVERRIDE_TEXT, None
 
         text_lower = user_text.lower().strip()
+        text_clean = re.sub(r'[^\w\s]', '', text_lower).strip()
         words = set(re.findall(r"\b[a-zA-Z']+\b", text_lower))
         history_text = self._extract_conversation_history_text(conversation_context)
         combined_context = f"{history_text} {text_lower}"
+
+        # -------------------------------------------------------------
+        # 2. GREETINGS & CASUAL RAPPORT BUILDING (Top Priority Gate)
+        # -------------------------------------------------------------
+        GREETINGS_SET = {
+            "hi", "hello", "hey", "greetings", "good morning", "good afternoon",
+            "good evening", "howdy", "sup", "yo", "salam", "assalam", "assalamoalaikum", "assalamualaykum"
+        }
+        is_greeting = (
+            text_clean in GREETINGS_SET
+            or any(text_clean.startswith(g) for g in ["hi ", "hello ", "hey ", "good morning", "good afternoon", "good evening", "salam "])
+        )
+
+        if is_greeting or strategy == "normal_conversation" and any(w in words for w in ["hi", "hello", "hey", "salam"]):
+            if is_roman_urdu:
+                content = "Salam! Main yahan aapki baat sunne aur aapko support karne ke liye tayyar hoon. Aap kaisa mehsoos kar rahe hain, aur aaj kis baare mein baat karna chahenge?"
+            else:
+                content = "Hello! I'm here to listen and help you work through whatever is on your mind today. How are you feeling right now?"
+            return content, None
+
+        # -------------------------------------------------------------
+        # 3. HOW ARE YOU / POLITE INQUIRIES
+        # -------------------------------------------------------------
+        if any(phrase in text_lower for phrase in ["how are you", "hows it going", "how are you doing", "kese ho", "kaise ho", "kya haal hai", "kya hal"]):
+            if is_roman_urdu:
+                content = "Main bilkul theek hoon, poochne ka bohat shukriya! Meri poori tawajjo aap par hai. Aaj aapke zehn mein kya chal raha hai?"
+            else:
+                content = "I'm doing well, thank you for asking! I'm ready to focus entirely on you. What's on your mind today?"
+            return content, None
+
+        # -------------------------------------------------------------
+        # 4. IDENTITY & ROLE QUERIES
+        # -------------------------------------------------------------
+        if any(w in words for w in ["who", "what", "kaun", "kya"]) and any(w in words for w in ["you", "bot", "ai", "system", "better", "tum", "aap"]):
+            if is_roman_urdu:
+                content = (
+                    "Main Better Me AI hoon — aapka clinical cognitive therapy companion. "
+                    "Mera maqsad aapke pareshan kun khayalat (cognitive distortions) ko pehchan kar "
+                    "CBT reframing ke zariye aapko sakoon aur rahnumai faraham karna hai. "
+                    "Main aapki kis tarha madad kar sakta hoon?"
+                )
+            else:
+                content = (
+                    "I am Better Me, your clinical AI cognitive therapy companion. "
+                    "I'm designed to help you explore your thoughts, identify unhelpful cognitive patterns, "
+                    "and work through evidence-based CBT exercises in a safe, confidential space. "
+                    "How can I support you right now?"
+                )
+            return content, None
 
         # Context Topic Detection
         has_academic_context = any(
@@ -139,7 +189,7 @@ class FallbackService:
         )
 
         # -------------------------------------------------------------
-        # 2. SOLUTION & COPING PLAN SEEKING INTENT
+        # 5. SOLUTION & COPING PLAN SEEKING INTENT
         # e.g., "tell me the solution of this bro", "kya karun", "what should i do", "how to solve"
         # -------------------------------------------------------------
         is_solution_request = bool(
@@ -197,7 +247,7 @@ class FallbackService:
             return content, cbt_dump
 
         # -------------------------------------------------------------
-        # 3. EXISTENTIAL / DEFECTIVENESS BELIEF
+        # 6. EXISTENTIAL / DEFECTIVENESS BELIEF
         # e.g., "in my mind i want that i am not fit in this world"
         # -------------------------------------------------------------
         is_existential_statement = bool(
@@ -230,7 +280,7 @@ class FallbackService:
             return content, cbt_dump
 
         # -------------------------------------------------------------
-        # 4. DURATION / TIME HORIZON ANSWER
+        # 7. DURATION / TIME HORIZON ANSWER
         # e.g., "from since 3,4 days", "since 3 days", "3,4 din se"
         # -------------------------------------------------------------
         is_duration_answer = bool(
@@ -258,7 +308,7 @@ class FallbackService:
             return content, None
 
         # -------------------------------------------------------------
-        # 5. ACADEMIC / EXAM DISTRESS INITIAL STATEMENT
+        # 8. ACADEMIC / EXAM DISTRESS INITIAL STATEMENT
         # e.g., "i failed the paper in my exam i prepare myself well but still i fail..."
         # -------------------------------------------------------------
         is_exam_disclosure = (
@@ -284,9 +334,9 @@ class FallbackService:
             return content, None
 
         # -------------------------------------------------------------
-        # 6. CBT SUPPORT STRATEGY OR DETECTED DISTORTION
+        # 9. CBT SUPPORT STRATEGY (When Explicitly Authorized by Decision Engine)
         # -------------------------------------------------------------
-        if strategy == "cbt_support" or (distortion_pred and distortion_pred.confidence >= 0.50 and distortion_pred.predicted_class not in ["None", "Normal"]):
+        if strategy == "cbt_support":
             dist_name = (cbt_guidance.detected_distortion if cbt_guidance else None) or (distortion_pred.predicted_class if distortion_pred else None)
             if is_roman_urdu:
                 reframe = self.CBT_ROMAN_URDU_REFRAMES.get(
@@ -308,46 +358,6 @@ class FallbackService:
                 cbt_dump = cbt_guidance.model_dump() if cbt_guidance else {}
                 cbt_dump["balanced_thought_guidance"] = reframe
                 return reframe, cbt_dump
-
-        # -------------------------------------------------------------
-        # 7. IDENTITY & ROLE QUERIES
-        # -------------------------------------------------------------
-        if any(w in words for w in ["who", "what", "kaun", "kya"]) and any(w in words for w in ["you", "bot", "ai", "system", "better", "tum", "aap"]):
-            if is_roman_urdu:
-                content = (
-                    "Main Better Me AI hoon — aapka clinical cognitive therapy companion. "
-                    "Mera maqsad aapke pareshan kun khayalat (cognitive distortions) ko pehchan kar "
-                    "CBT reframing ke zariye aapko sakoon aur rahnumai faraham karna hai. "
-                    "Main aapki kis tarha madad kar sakta hoon?"
-                )
-            else:
-                content = (
-                    "I am Better Me, your clinical AI cognitive therapy companion. "
-                    "I'm designed to help you explore your thoughts, identify unhelpful cognitive patterns, "
-                    "and work through evidence-based CBT exercises in a safe, confidential space. "
-                    "How can I support you right now?"
-                )
-            return content, None
-
-        # -------------------------------------------------------------
-        # 8. GREETINGS
-        # -------------------------------------------------------------
-        if any(w in words for w in ["hi", "hello", "hey", "assalam", "salam"]):
-            if is_roman_urdu:
-                content = "Salam! Main yahan aapki baat sunne aur aapko support karne ke liye tayyar hoon. Aap kaisa mehsoos kar rahe hain, aur aaj kis baare mein baat karna chahenge?"
-            else:
-                content = "Hello! I'm here to listen and help you work through any thoughts or situations on your mind today. How are you feeling right now?"
-            return content, None
-
-        # -------------------------------------------------------------
-        # 9. HOW ARE YOU
-        # -------------------------------------------------------------
-        if any(phrase in text_lower for phrase in ["how are you", "hows it going", "how are you doing", "kese ho", "kaise ho", "kya haal hai", "kya hal"]):
-            if is_roman_urdu:
-                content = "Main bilkul theek hoon, poochne ka bohat shukriya! Meri poori tawajjo aap par hai. Aaj aapke zehn mein kya chal raha hai?"
-            else:
-                content = "I'm doing well, thank you for asking! I'm ready to focus entirely on you. What's on your mind today?"
-            return content, None
 
         # -------------------------------------------------------------
         # 10. ACUTE OVERWHELM & DISTRESS

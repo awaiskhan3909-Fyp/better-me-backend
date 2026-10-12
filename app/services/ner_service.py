@@ -68,7 +68,20 @@ class NERService:
 
         # Sort extracted entities by start position
         results.sort(key=lambda x: x.start if x.start is not None else 0)
-        return results
+
+        # Filter out casual slang vocatives (e.g., 'who are you brother', 'kon ho ap bhai', 'thanks bro')
+        text_lower = text.lower()
+        is_casual_inquiry = bool(re.search(r"\b(?:who|what|hi|hello|hey|thanks|thank|kon|kaun|ap|kya|bhai|bro)\b", text_lower))
+        
+        filtered_results: List[EntityItem] = []
+        for ent in results:
+            if ent.label == "FAMILY" and ent.text.lower() in ["brother", "bro"]:
+                has_family_possession = bool(re.search(r"\b(?:my|our|his|her|their|with|and)\s+(?:brother|bro)\b", text_lower))
+                if is_casual_inquiry and not has_family_possession and len(text.split()) <= 6:
+                    continue
+            filtered_results.append(ent)
+
+        return filtered_results
 
 
 ner_service = NERService()

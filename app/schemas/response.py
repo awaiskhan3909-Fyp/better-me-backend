@@ -47,15 +47,6 @@ class ModelBenchmarkStats(BaseModel):
     cbt_model_name: str = "Llama-3-8B-CBT-LoRA"
 
 
-class AnalyzeResponse(BaseModel):
-    text: str
-    safety: SafetyPrediction
-    distortion: DistortionPrediction
-    entities: List[EntityItem]
-    cbt_guidance: CBTGuidance
-    benchmark_stats: Optional[ModelBenchmarkStats] = Field(default_factory=ModelBenchmarkStats)
-
-
 # --- Database & Intelligence Schemas ---
 
 class ResponseDecisionDetail(BaseModel):
@@ -65,6 +56,16 @@ class ResponseDecisionDetail(BaseModel):
     distortion_detected: Optional[str] = None
     safety_risk_level: str = "Safe"
     decision_version: str = "v1"
+
+
+class AnalyzeResponse(BaseModel):
+    text: str
+    safety: SafetyPrediction
+    distortion: DistortionPrediction
+    entities: List[EntityItem]
+    cbt_guidance: CBTGuidance
+    decision: Optional[ResponseDecisionDetail] = None
+    benchmark_stats: Optional[ModelBenchmarkStats] = Field(default_factory=ModelBenchmarkStats)
 
 
 class ConversationResponse(BaseModel):

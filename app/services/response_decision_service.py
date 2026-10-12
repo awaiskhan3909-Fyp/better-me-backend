@@ -135,8 +135,15 @@ class ResponseDecisionService:
         # -------------------------------------------------------------
         # RULE 2A — GREETINGS & CASUAL CHAT
         # -------------------------------------------------------------
+        GREETING_PATTERNS = [
+            r"\b(?:hi|hello|hey|salam|assalam|assalamoalaikum|assalamualaykum|greetings|howdy|sup|yo)\b",
+            r"\b(?:good\s+morning|good\s+afternoon|good\s+evening|good\s+night)\b",
+            r"\b(?:how\s+are\s+you|hows\s+it\s+going|kese\s+ho|kaise\s+ho|kya\s+haal\s+hai|kya\s+hal)\b",
+            r"\b(?:thanks|thank\s+you|shukriya|jazakallah|bye|goodbye|allah\s+hafiz)\b"
+        ]
         is_greeting = (
             text_clean in self.GREETINGS
+            or any(bool(re.search(pat, text_lower)) for pat in GREETING_PATTERNS)
             or any(text_clean.startswith(g) for g in ["hi ", "hello", "hey", "good morning", "good afternoon", "good evening", "how are you"])
         )
 
@@ -145,7 +152,7 @@ class ResponseDecisionService:
                 strategy=ResponseStrategy.NORMAL_CONVERSATION,
                 priority=DecisionPriority.NORMAL,
                 reason="casual_conversation_or_greeting",
-                distortion_detected=context.distortion_result.predicted_class,
+                distortion_detected="None",
                 safety_risk_level=context.safety_result.risk_level
             )
 
@@ -162,7 +169,7 @@ class ResponseDecisionService:
                 strategy=ResponseStrategy.NORMAL_CONVERSATION,
                 priority=DecisionPriority.NORMAL,
                 reason="help_seeking_request",
-                distortion_detected=context.distortion_result.predicted_class,
+                distortion_detected="None",
                 safety_risk_level=context.safety_result.risk_level
             )
 
@@ -187,6 +194,31 @@ class ResponseDecisionService:
             )
 
         # -------------------------------------------------------------
+        # RULE 2D — IDENTITY, BOT INTRO & CAPABILITY INQUIRIES
+        # e.g., "who are you", "who r u", "what are you", "kon ho ap bhai", "tum kon ho", "kya ho tum"
+        # -------------------------------------------------------------
+        IDENTITY_PATTERNS = [
+            r"\b(?:who\s+(?:are|r)\s+(?:you|u)|who\s+is\s+this|what\s+are\s+you|what\s+is\s+your\s+name)\b",
+            r"\b(?:kon\s+ho|kaun\s+ho|kya\s+ho\s+tum|kya\s+ho\s+aap|kya\s+ho\s+ap|ap\s+kon\s+ho|aap\s+kaun\s+ho|tum\s+kon\s+ho|tum\s+kaun\s+ho)\b",
+            r"\b(?:kon\s+hain\s+aap|apka\s+naam\s+kya\s+hai|aapka\s+naam|naam\s+kya\s+hai)\b",
+            r"\b(?:who\s+created\s+you|who\s+made\s+you|tell\s+me\s+about\s+yourself|apna\s+intro)\b"
+        ]
+        is_identity_query = any(bool(re.search(pat, text_lower)) for pat in IDENTITY_PATTERNS) or (
+            any(w in words for w in ["who", "what", "kon", "kaun", "kya"])
+            and any(w in words for w in ["you", "u", "bot", "ai", "system", "tum", "aap", "ap", "bhai", "bro"])
+            and not any(w in words for w in ["sad", "depressed", "anxious", "failed", "die", "suicide", "exam", "problem", "marks"])
+        )
+
+        if is_identity_query:
+            return ResponseDecision(
+                strategy=ResponseStrategy.NORMAL_CONVERSATION,
+                priority=DecisionPriority.NORMAL,
+                reason="identity_and_role_query",
+                distortion_detected="None",
+                safety_risk_level=context.safety_result.risk_level
+            )
+
+        # -------------------------------------------------------------
         # RULE 3 — CONTEXT & EVIDENCE GATE FOR CBT SUPPORT
         # Signal (Classifier) + Evidence (Explicit Distorted Thought Pattern)
         # -------------------------------------------------------------
@@ -196,18 +228,25 @@ class ResponseDecisionService:
         is_signal_present = (
             predicted_distortion
             and predicted_distortion.lower() not in self.NON_DISTORTIONS
-            and confidence >= 0.35
+            and confidence >= 0.50
         )
 
         has_evidence = self.has_cbt_evidence(text_lower, words)
 
-        has_active_history = bool(
-            context.conversation_context
-            and getattr(context.conversation_context, "has_history", False)
-            and getattr(context.conversation_context, "history_count", 0) >= 2
+        # Exclude questions directed to the bot from being classified as distortions
+        is_question_to_bot = bool(
+            re.search(r"\b(?:who|what|why|how|when|where|kon|kaun|kya|kyun|kese|kaise)\b", text_lower)
+            and any(w in words for w in ["you", "u", "bot", "ai", "tum", "aap", "ap", "bhai"])
         )
 
-        if is_signal_present and (has_evidence or confidence >= 0.55 or has_active_history):
+        # Cognitive distortion must have actual evidence OR very high confidence (>0.85) with explicit personal distress
+        has_distress = any(w in words for w in [
+            "sad", "depressed", "anxiety", "anxious", "scared", "fear", "fail", "failed", "failure",
+            "cry", "crying", "hate", "hates", "hopeless", "worthless", "useless", "alone",
+            "preshan", "pareshan", "udas", "khof", "dar", "mushkil", "nakam", "ruined", "ruins", "dunya", "life"
+        ])
+
+        if not is_question_to_bot and is_signal_present and (has_evidence or (confidence >= 0.85 and has_distress)):
             return ResponseDecision(
                 strategy=ResponseStrategy.CBT_SUPPORT,
                 priority=DecisionPriority.HIGH,

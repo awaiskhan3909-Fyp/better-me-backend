@@ -156,14 +156,29 @@ class FallbackService:
 
         # -------------------------------------------------------------
         # 4. IDENTITY & ROLE QUERIES
+        # e.g., "kon ho ap bhai", "who are you", "tum kon ho", "kya ho tum"
         # -------------------------------------------------------------
-        if any(w in words for w in ["who", "what", "kaun", "kya"]) and any(w in words for w in ["you", "bot", "ai", "system", "better", "tum", "aap"]):
+        is_identity_query = bool(
+            re.search(
+                r"\b(?:who\s+(?:are|r)\s+(?:you|u)|what\s+are\s+you|who\s+is\s+this|what\s+is\s+your\s+name|kon\s+ho|kaun\s+ho|kya\s+ho\s+tum|kya\s+ho\s+aap|kya\s+ho\s+ap|ap\s+kon\s+ho|aap\s+kaun\s+ho|tum\s+kon\s+ho|tum\s+kaun\s+ho|naam\s+kya\s+hai|kon\s+hain\s+aap|kon\s+ho\s+bhai|bhai\s+kon\s+ho)\b",
+                text_lower
+            )
+            or (
+                any(w in words for w in ["who", "what", "kaun", "kon", "kya"])
+                and any(w in words for w in ["you", "u", "bot", "ai", "system", "better", "tum", "aap", "ap"])
+            )
+            or (
+                strategy == "normal_conversation" and any(w in words for w in ["kon", "kaun", "who"])
+            )
+        )
+
+        if is_identity_query:
             if is_roman_urdu:
                 content = (
                     "Main Better Me AI hoon — aapka clinical cognitive therapy companion. "
                     "Mera maqsad aapke pareshan kun khayalat (cognitive distortions) ko pehchan kar "
                     "CBT reframing ke zariye aapko sakoon aur rahnumai faraham karna hai. "
-                    "Main aapki kis tarha madad kar sakta hoon?"
+                    "Aap is waqt kaisa mehsoos kar rahe hain, aur aaj kis baare mein baat karna chahenge?"
                 )
             else:
                 content = (

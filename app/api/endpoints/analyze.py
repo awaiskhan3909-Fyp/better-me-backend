@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.schemas.request import AnalyzeRequest
-from app.schemas.response import AnalyzeResponse, CBTGuidance, DistortionPrediction
+from app.schemas.response import AnalyzeResponse, CBTGuidance, DistortionPrediction, ResponseDecisionDetail
 from app.services.safety_service import safety_service
 from app.services.distortion_service import distortion_service
 from app.services.ner_service import ner_service
@@ -113,5 +113,12 @@ def analyze_text(payload: AnalyzeRequest):
         safety=safety_pred,
         distortion=distortion_output,
         entities=entities,
-        cbt_guidance=cbt_guidance
+        cbt_guidance=cbt_guidance,
+        decision=ResponseDecisionDetail(
+            strategy=decision.strategy.value,
+            priority=decision.priority.value,
+            reason=decision.reason,
+            distortion_detected=decision.distortion_detected,
+            safety_risk_level=decision.safety_risk_level
+        )
     )

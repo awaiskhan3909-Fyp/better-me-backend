@@ -50,25 +50,14 @@ class FallbackService:
                 return "Salam! Main Better Me AI hoon. Aap kaisa mehsoos kar rahe hain, aur aaj kis baare mein baat karna chahenge?", None
             return "Hello! I am Better Me, your clinical AI companion. How are you feeling right now, and what is on your mind?", None
 
-        # 3. IDENTITY QUERY
-        if any(w in words for w in ["who", "what", "kon", "kaun"]) and any(w in words for w in ["you", "u", "bot", "ai", "tum", "aap", "ap"]):
-            if is_roman_urdu:
-                return "Main Better Me AI hoon — aapka clinical cognitive therapy companion. Main aapki kis tarha madad kar sakta hoon?", None
-            return "I am Better Me, your AI cognitive therapy companion. How can I support you today?", None
+        # 3. CONVERSATIONAL FALLBACK (Only reached if GPU inference is interrupted)
+        if cbt_guidance and cbt_guidance.balanced_thought_guidance:
+            return cbt_guidance.balanced_thought_guidance, cbt_guidance.model_dump()
 
-        # 4. NEUTRAL NON-HARDCODED TRANSITION
         if is_roman_urdu:
-            content = (
-                "Main aapki baat samajh raha hoon. "
-                "Barah-e-karam thora aur tafseel se batayein ke is waqt aapke zehn mein kya chal raha hai taake hum mil kar ispar baat kar sakein."
-            )
-        else:
-            content = (
-                "I hear you. "
-                "Please tell me a little more about what you're experiencing right now so we can explore this together."
-            )
+            return "Main aapki baat samajh raha hoon. Aayein mil kar is soch ko objectively examine karein aur ek balanced tareeqay se dekhein.", None
 
-        return content, None
+        return "I hear the distress in what you are experiencing. Let us look at the objective evidence together to find a more balanced, manageable way through this.", None
 
 
 fallback_service = FallbackService()

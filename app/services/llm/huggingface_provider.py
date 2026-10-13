@@ -55,6 +55,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
         try:
             import torch
             from unsloth import FastLanguageModel
+            print(f"\n[LLM] Loading fine-tuned 4-bit LLaMA-3 LoRA '{self.repo_id}' on CUDA via Unsloth...")
             logger.info(f"Unsloth detected on CUDA! Loading fine-tuned 4-bit LLaMA-3 LoRA '{self.repo_id}' directly...")
             model, tokenizer = FastLanguageModel.from_pretrained(
                 model_name=self.repo_id,
@@ -68,9 +69,11 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
             self.unsloth_tokenizer = tokenizer
             self.local_pipeline = "unsloth"
             self.init_error = None
+            print("✅ [LLM] Unsloth 4-bit LLaMA-3 LoRA model successfully loaded on GPU!")
             logger.info("✅ Unsloth 4-bit LLaMA-3 LoRA model ready on GPU!")
             return
         except Exception as unsloth_err:
+            print(f"⚠️ [LLM] Unsloth init notice: {unsloth_err}. Trying standard transformers pipeline...")
             logger.info(f"Unsloth initialization not available ({unsloth_err}). Trying standard transformers pipeline...")
 
         # 2. Fallback to standard Hugging Face Transformers + PEFT

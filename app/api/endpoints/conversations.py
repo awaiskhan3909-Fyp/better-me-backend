@@ -198,6 +198,21 @@ def send_message_in_conversation(
         llm_metadata_json["distortion_accuracy"] = "99.85%"
         llm_metadata_json["model_display_name"] = "Llama-3-8B-CBT-LoRA"
 
+        # Live Colab Terminal Telemetry Log
+        print("\n" + "=" * 70)
+        print(f"📩 [NEW CHAT MESSAGE RECEIVED]")
+        print(f"👤 User Input        : {text[:90]}{'...' if len(text) > 90 else ''}")
+        print(f"🛡️ BERT Safety Risk  : {safety_pred.risk_level} ({safety_pred.confidence * 100:.1f}%)")
+        print(f"🧠 BERT Distortion   : {distortion_pred.predicted_class} ({distortion_pred.confidence * 100:.1f}%)")
+        ner_tags = ", ".join([f"{e.label}: {e.text}" for e in entities]) if entities else "None"
+        print(f"🏷️ Context NER Tags  : {ner_tags}")
+        print(f"🤖 Model Executed    : {model_name} (Source: {response_source})")
+        print(f"✨ AI Response Text  : {ai_message_content[:150]}{'...' if len(ai_message_content) > 150 else ''}")
+        latency = llm_metadata_json.get("latency_ms", "N/A")
+        if isinstance(latency, (int, float)):
+            print(f"⚡ GPU Latency       : {latency:.0f} ms")
+        print("=" * 70 + "\n")
+
 
         # Configure response schemas for frontend/analysis contract
         if decision.strategy == ResponseStrategy.CBT_SUPPORT:

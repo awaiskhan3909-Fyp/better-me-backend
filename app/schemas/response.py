@@ -22,6 +22,7 @@ class SafetyPrediction(BaseModel):
     risk_level: str  # "Safe", "Moderate", "High Risk"
     needs_safety_alert: bool
     probabilities: Dict[str, float]
+    confidence: float = 0.98
 
 
 class CBTGuidance(BaseModel):

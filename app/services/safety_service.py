@@ -172,10 +172,12 @@ class SafetyService:
                 for i, name in enumerate(self.label_names)
             }
 
+        conf = float(probs_map.get(risk_level, 0.98))
         return SafetyPrediction(
             risk_level=risk_level,
             needs_safety_alert=needs_safety_alert,
-            probabilities=probs_map
+            probabilities=probs_map,
+            confidence=conf
         )
 
 

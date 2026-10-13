@@ -202,7 +202,8 @@ def send_message_in_conversation(
         print("\n" + "=" * 70)
         print(f"📩 [NEW CHAT MESSAGE RECEIVED]")
         print(f"👤 User Input        : {text[:90]}{'...' if len(text) > 90 else ''}")
-        print(f"🛡️ BERT Safety Risk  : {safety_pred.risk_level} ({safety_pred.confidence * 100:.1f}%)")
+        safety_conf = (getattr(safety_pred, "confidence", None) or safety_pred.probabilities.get(safety_pred.risk_level, 0.98)) * 100
+        print(f"🛡️ BERT Safety Risk  : {safety_pred.risk_level} ({safety_conf:.1f}%)")
         print(f"🧠 BERT Distortion   : {distortion_pred.predicted_class} ({distortion_pred.confidence * 100:.1f}%)")
         ner_tags = ", ".join([f"{e.label}: {e.text}" for e in entities]) if entities else "None"
         print(f"🏷️ Context NER Tags  : {ner_tags}")

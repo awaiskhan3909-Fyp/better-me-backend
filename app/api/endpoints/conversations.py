@@ -208,6 +208,8 @@ def send_message_in_conversation(
         ner_tags = ", ".join([f"{e.label}: {e.text}" for e in entities]) if entities else "None"
         print(f"🏷️ Context NER Tags  : {ner_tags}")
         print(f"🤖 Model Executed    : {model_name} (Source: {response_source})")
+        if llm_metadata_json.get("fallback_used"):
+            print(f"⚠️ FALLBACK TRIGGERED: Reason = {llm_metadata_json.get('fallback_reason')}")
         print(f"✨ AI Response Text  : {ai_message_content[:150]}{'...' if len(ai_message_content) > 150 else ''}")
         latency = llm_metadata_json.get("latency_ms", "N/A")
         if isinstance(latency, (int, float)):

@@ -102,16 +102,26 @@ class LLMService:
         # 3. Check Provider Availability & Execute LLM Generation
         if self.provider.is_available():
             try:
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(
-                        self.provider.generate,
-                        prompt=prompt_text,
-                        system_instruction=prompt_builder.system_instruction,
-                        temperature=0.7,
-                        max_tokens=150
-                    )
-                    provider_resp = future.result(timeout=45.0)
+                # Format recent history for conversational continuity if present
+                recent_history_str = None
+                if conversation_context and conversation_context.recent_messages:
+                    history_turns = []
+                    for m in conversation_context.recent_messages[-4:]:
+                        role = "Patient" if m.sender_type == "user" else "Better Me"
+                        history_turns.append(f"{role}: {m.content}")
+                    if history_turns:
+                        recent_history_str = "\n".join(history_turns)
+
+                provider_resp = self.provider.generate(
+                    prompt=prompt_text,
+                    system_instruction=prompt_builder.system_instruction,
+                    temperature=0.7,
+                    max_tokens=180,
+                    user_text=user_text,
+                    distortion_name=distortion_pred.predicted_class if distortion_pred else None,
+                    is_roman_urdu=is_roman_urdu,
+                    recent_history=recent_history_str
+                )
 
                 # Validate LLM Output
                 is_valid, sanitized_text, failure_reason = response_parser.validate_and_sanitize(
@@ -144,13 +154,18 @@ class LLMService:
                         }
                     )
                 else:
+                    print(f"⚠️ [LLM VALIDATION NOTICE]: {failure_reason} for text: '{provider_resp.raw_content}'")
                     logger.warning(f"LLM output validation failed: {failure_reason}. Executing fallback.")
                     fallback_reason = f"validation_failed ({failure_reason})"
 
             except Exception as e:
+                import traceback
+                print(f"❌ [LLM PROVIDER EXECUTION EXCEPTION]: {e}")
+                traceback.print_exc()
                 logger.error(f"LLM Provider execution exception: {e}. Executing fallback.")
                 fallback_reason = f"provider_error ({str(e)})"
         else:
+            print("⚠️ [LLM PROVIDER NOTICE]: Provider is not available.")
             fallback_reason = "provider_unavailable"
 
 

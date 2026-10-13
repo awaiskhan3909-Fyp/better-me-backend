@@ -152,7 +152,8 @@ def preload_all_models():
         print("      [...] Pre-warming GPU CUDA kernels with test prompt...")
         test_resp = llm_service.provider.generate(
             prompt="Hello, I feel overwhelmed today.",
-            system_instruction="Provide empathetic validation.",
+            user_text="Hello, I feel overwhelmed today.",
+            distortion_name="Emotional Reasoning",
             temperature=0.7,
             max_tokens=25
         )

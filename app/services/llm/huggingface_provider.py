@@ -51,6 +51,10 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
 
     def _init_local_pipeline(self):
         """Loads 4-bit model directly on available GPU with Unsloth optimization."""
+        if getattr(self, "unsloth_model", None) is not None:
+            logger.info("Unsloth model already initialized in memory.")
+            return
+
         # 1. Try Unsloth FastLanguageModel first (Ultra-fast, native format for this trained model)
         try:
             import torch
@@ -125,31 +129,71 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
 
 
     def is_available(self) -> bool:
-        if self.local_pipeline is not None:
+        if getattr(self, "unsloth_model", None) is not None or self.local_pipeline is not None:
             return True
         return bool(self.hf_token and self.hf_token.strip())
 
     def generate(
         self,
         prompt: str,
-        system_instruction: str,
+        system_instruction: str = "",
         temperature: float = 0.7,
-        max_tokens: int = 150
+        max_tokens: int = 180,
+        user_text: Optional[str] = None,
+        distortion_name: Optional[str] = None,
+        is_roman_urdu: bool = False,
+        recent_history: Optional[str] = None
     ) -> ProviderLLMResponse:
         start_time = time.time()
 
-        # Format full prompt with the fine-tuned Alpaca CBT training format
+        # Build clean clinical instruction matching the fine-tuned LoRA dataset
+        target_distortion = distortion_name if distortion_name and distortion_name not in ["None", "Normal", "no distortion"] else None
+
+        if is_roman_urdu:
+            if target_distortion:
+                instruction = (
+                    f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion} and is speaking in Roman Urdu. "
+                    f"Respond warmly and empathetically in natural, conversational Roman Urdu (Latin script Urdu). "
+                    f"Validate their emotional distress, gently reframe the unhelpful thought using Socratic questioning, and propose a balanced perspective."
+                )
+            else:
+                instruction = (
+                    "You are Better Me, an empathetic clinical CBT companion. The patient is speaking in Roman Urdu. "
+                    "Respond with warmth, active listening, and thoughtful Socratic support in conversational Roman Urdu."
+                )
+        else:
+            if target_distortion:
+                instruction = (
+                    f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion}. "
+                    f"Validate their emotional state with deep empathy, gently challenge the distortion using Socratic questioning, and propose a balanced cognitive perspective."
+                )
+            else:
+                instruction = (
+                    "You are Better Me, a clinical CBT companion. Provide empathetic validation, thoughtful active listening, and supportive Socratic guidance."
+                )
+
+        # Input is focused on the patient's distressed thought
+        if user_text:
+            if recent_history:
+                patient_input = f"{recent_history}\nCurrent Thought: {user_text}"
+            else:
+                patient_input = user_text
+        else:
+            patient_input = prompt
+
         alpaca_prompt = (
             f"Below is an instruction that describes a clinical CBT therapeutic task, paired with an input containing the patient's distressed thought. Write a response that provides empathetic validation, Socratic cognitive restructuring, and a balanced reframe.\n\n"
-            f"### Instruction:\n{system_instruction}\n\n"
-            f"### Input:\n{prompt}\n\n"
+            f"### Instruction:\n{instruction}\n\n"
+            f"### Input:\n{patient_input}\n\n"
             f"### Response:\n"
         )
 
-        # 1. Unsloth Native GPU Execution
+        # 1. Unsloth Native GPU Execution (Primary)
         if getattr(self, "unsloth_model", None) is not None and getattr(self, "unsloth_tokenizer", None) is not None:
             try:
                 inputs = self.unsloth_tokenizer([alpaca_prompt], return_tensors="pt").to("cuda")
+                input_len = inputs["input_ids"].shape[1]
+
                 pad_id = self.unsloth_tokenizer.pad_token_id
                 if pad_id is None:
                     eos_id = self.unsloth_tokenizer.eos_token_id
@@ -161,6 +205,8 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 }
                 if isinstance(pad_id, int):
                     gen_kwargs["pad_token_id"] = pad_id
+                if self.unsloth_tokenizer.eos_token_id is not None:
+                    gen_kwargs["eos_token_id"] = self.unsloth_tokenizer.eos_token_id
                 if temperature and temperature > 0:
                     gen_kwargs["temperature"] = float(temperature)
                     gen_kwargs["do_sample"] = True
@@ -170,27 +216,34 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                     **inputs,
                     **gen_kwargs
                 )
-                generated_full = self.unsloth_tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
-                if "### Response:" in generated_full:
-                    generated_text = generated_full.split("### Response:")[-1].strip()
-                else:
-                    generated_text = generated_full.strip()
+
+                # Slice newly generated tokens directly
+                generated_tokens = outputs[0][input_len:]
+                generated_text = self.unsloth_tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
+
+                if not generated_text:
+                    raw_decoded = self.unsloth_tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+                    if "### Response:" in raw_decoded:
+                        generated_text = raw_decoded.split("### Response:")[-1].strip()
+                    else:
+                        generated_text = raw_decoded.strip()
 
                 latency_ms = (time.time() - start_time) * 1000
-                print(f"✅ [LLM GPU] Live LLaMA-3 generation complete in {latency_ms:.0f}ms!")
+                print(f"✅ [LLM GPU] Live LLaMA-3 generation complete in {latency_ms:.0f}ms! (Generated tokens: {len(generated_tokens)})")
                 return ProviderLLMResponse(
                     raw_content=generated_text,
-                    prompt_tokens=len(prompt.split()),
-                    completion_tokens=len(generated_text.split()),
+                    prompt_tokens=input_len,
+                    completion_tokens=len(generated_tokens),
                     latency_ms=latency_ms,
                     model_name=self.repo_id,
                     provider_name="unsloth_llama3_lora_gpu"
                 )
             except Exception as unsloth_gen_err:
                 import traceback
-                print(f"⚠️ [LLM GPU Generation Error]: {unsloth_gen_err}")
+                print(f"❌ [LLM GPU Generation Error]: {unsloth_gen_err}")
                 traceback.print_exc()
                 logger.error(f"Unsloth generation error: {unsloth_gen_err}")
+                raise unsloth_gen_err
 
         # 2. Local Pipeline Execution (Standard Transformers)
         if self.local_pipeline is not None and self.local_pipeline != "unsloth":
@@ -215,40 +268,44 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 )
             except Exception as e:
                 logger.error(f"Local pipeline generation error: {e}")
+                raise e
 
-        # 2. Remote Hugging Face Inference API Execution
-        api_url = f"https://api-inference.huggingface.co/models/{self.repo_id}"
-        headers = {
-            "Authorization": f"Bearer {self.hf_token}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "inputs": alpaca_prompt,
-            "parameters": {
-                "max_new_tokens": max_tokens,
-                "temperature": temperature,
-                "return_full_text": False
+        # 3. Remote Hugging Face Inference API Execution (Only if local not loaded)
+        if self.hf_token and not self.repo_id.startswith("/"):
+            api_url = f"https://api-inference.huggingface.co/models/{self.repo_id}"
+            headers = {
+                "Authorization": f"Bearer {self.hf_token}",
+                "Content-Type": "application/json"
             }
-        }
+            payload = {
+                "inputs": alpaca_prompt,
+                "parameters": {
+                    "max_new_tokens": max_tokens,
+                    "temperature": temperature,
+                    "return_full_text": False
+                }
+            }
 
-        response = requests.post(api_url, headers=headers, json=payload, timeout=15)
-        if response.status_code != 200:
-            raise RuntimeError(f"Hugging Face API returned status {response.status_code}: {response.text}")
+            response = requests.post(api_url, headers=headers, json=payload, timeout=15)
+            if response.status_code != 200:
+                raise RuntimeError(f"Hugging Face API returned status {response.status_code}: {response.text}")
 
-        res_data = response.json()
-        if isinstance(res_data, list) and len(res_data) > 0:
-            generated_text = res_data[0].get("generated_text", "")
-        elif isinstance(res_data, dict):
-            generated_text = res_data.get("generated_text", "")
-        else:
-            generated_text = str(res_data)
+            res_data = response.json()
+            if isinstance(res_data, list) and len(res_data) > 0:
+                generated_text = res_data[0].get("generated_text", "")
+            elif isinstance(res_data, dict):
+                generated_text = res_data.get("generated_text", "")
+            else:
+                generated_text = str(res_data)
 
-        latency_ms = (time.time() - start_time) * 1000
-        return ProviderLLMResponse(
-            raw_content=generated_text.strip(),
-            prompt_tokens=len(prompt.split()),
-            completion_tokens=len(generated_text.split()),
-            latency_ms=latency_ms,
-            model_name=self.repo_id,
-            provider_name="huggingface_inference_api"
-        )
+            latency_ms = (time.time() - start_time) * 1000
+            return ProviderLLMResponse(
+                raw_content=generated_text.strip(),
+                prompt_tokens=len(prompt.split()),
+                completion_tokens=len(generated_text.split()),
+                latency_ms=latency_ms,
+                model_name=self.repo_id,
+                provider_name="huggingface_inference_api"
+            )
+
+        raise RuntimeError("No available LLM execution pipeline found.")

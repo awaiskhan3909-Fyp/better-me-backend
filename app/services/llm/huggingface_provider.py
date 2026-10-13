@@ -150,12 +150,25 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
         if getattr(self, "unsloth_model", None) is not None and getattr(self, "unsloth_tokenizer", None) is not None:
             try:
                 inputs = self.unsloth_tokenizer([alpaca_prompt], return_tensors="pt").to("cuda")
+                pad_id = self.unsloth_tokenizer.pad_token_id
+                if pad_id is None:
+                    eos_id = self.unsloth_tokenizer.eos_token_id
+                    pad_id = eos_id[0] if isinstance(eos_id, (list, tuple)) else eos_id
+
+                gen_kwargs = {
+                    "max_new_tokens": max_tokens,
+                    "use_cache": True,
+                }
+                if isinstance(pad_id, int):
+                    gen_kwargs["pad_token_id"] = pad_id
+                if temperature and temperature > 0:
+                    gen_kwargs["temperature"] = float(temperature)
+                    gen_kwargs["do_sample"] = True
+                    gen_kwargs["top_p"] = 0.9
+
                 outputs = self.unsloth_model.generate(
                     **inputs,
-                    max_new_tokens=max_tokens,
-                    temperature=temperature,
-                    do_sample=True,
-                    pad_token_id=self.unsloth_tokenizer.eos_token_id
+                    **gen_kwargs
                 )
                 generated_full = self.unsloth_tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
                 if "### Response:" in generated_full:
@@ -164,6 +177,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                     generated_text = generated_full.strip()
 
                 latency_ms = (time.time() - start_time) * 1000
+                print(f"✅ [LLM GPU] Live LLaMA-3 generation complete in {latency_ms:.0f}ms!")
                 return ProviderLLMResponse(
                     raw_content=generated_text,
                     prompt_tokens=len(prompt.split()),
@@ -173,6 +187,9 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                     provider_name="unsloth_llama3_lora_gpu"
                 )
             except Exception as unsloth_gen_err:
+                import traceback
+                print(f"⚠️ [LLM GPU Generation Error]: {unsloth_gen_err}")
+                traceback.print_exc()
                 logger.error(f"Unsloth generation error: {unsloth_gen_err}")
 
         # 2. Local Pipeline Execution (Standard Transformers)
@@ -206,7 +223,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
             "Content-Type": "application/json"
         }
         payload = {
-            "inputs": full_prompt,
+            "inputs": alpaca_prompt,
             "parameters": {
                 "max_new_tokens": max_tokens,
                 "temperature": temperature,

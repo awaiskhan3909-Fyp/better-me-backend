@@ -64,7 +64,11 @@ class SafetyService:
             config = BertConfig.from_pretrained("bert-base-uncased", num_labels=len(self.label_names))
             self.model = BertForSequenceClassification(config)
 
-            if model_path.exists():
+            drive_safety_path = Path("/content/drive/MyDrive/bert_safety_classifier/best_bert_safety_model.pt")
+            if drive_safety_path.exists():
+                print(f"📁 [DRIVE DETECTED] Found Safety Classifier model in Google Drive: {drive_safety_path}")
+                actual_weights_path = str(drive_safety_path)
+            elif model_path.exists():
                 actual_weights_path = str(model_path)
             else:
                 from huggingface_hub import hf_hub_download

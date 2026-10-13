@@ -20,7 +20,14 @@ class DistortionService:
             return
 
         model_dir = Path(DISTORTION_MODEL_DIR)
-        model_source = str(model_dir) if model_dir.exists() else HF_DISTORTION_REPO
+        drive_dir = Path("/content/drive/MyDrive/bert_cognitive_distortions")
+        if drive_dir.exists():
+            print(f"📁 [DRIVE DETECTED] Found Cognitive Distortion model in Google Drive: {drive_dir}")
+            model_source = str(drive_dir)
+        elif model_dir.exists():
+            model_source = str(model_dir)
+        else:
+            model_source = HF_DISTORTION_REPO
 
         try:
             print(f"[INFO] Loading Cognitive Distortion BERT model & tokenizer from: {model_source}...")

@@ -50,10 +50,7 @@ class FallbackService:
                 return "Salam! Main Better Me AI hoon. Aap kaisa mehsoos kar rahe hain, aur aaj kis baare mein baat karna chahenge?", None
             return "Hello! I am Better Me, your clinical AI companion. How are you feeling right now, and what is on your mind?", None
 
-        # 3. CONVERSATIONAL FALLBACK (Only reached if GPU inference is interrupted)
-        if cbt_guidance and cbt_guidance.balanced_thought_guidance:
-            return cbt_guidance.balanced_thought_guidance, cbt_guidance.model_dump()
-
+        # 3. CONVERSATIONAL FALLBACK (Only reached if GPU inference is offline)
         if is_roman_urdu:
             return "Main aapki baat samajh raha hoon. Aayein mil kar is soch ko objectively examine karein aur ek balanced tareeqay se dekhein.", None
 

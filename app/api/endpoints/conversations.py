@@ -200,9 +200,16 @@ def send_message_in_conversation(
 
 
         # Configure response schemas for frontend/analysis contract
-        if decision.strategy == ResponseStrategy.CBT_SUPPORT and default_cbt_guidance:
-            cbt_guidance = default_cbt_guidance
-            cbt_guidance.balanced_thought_guidance = ai_message_content
+        if decision.strategy == ResponseStrategy.CBT_SUPPORT:
+            cbt_guidance = CBTGuidance(
+                detected_distortion=distortion_pred.predicted_class,
+                template_id=None,
+                title=f"Cognitive Distortion: {distortion_pred.predicted_class}",
+                explanation=None,
+                reframing_question=None,
+                balanced_thought_guidance=ai_message_content,
+                small_action=None
+            )
             distortion_output = distortion_pred
         elif decision.strategy == ResponseStrategy.SAFETY_RESPONSE:
             cbt_guidance = CBTGuidance(

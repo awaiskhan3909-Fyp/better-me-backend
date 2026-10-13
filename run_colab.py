@@ -95,6 +95,18 @@ def start_tunnel():
 
 if __name__ == "__main__":
     check_gpu()
+
+    # Auto-detect Google Drive saved models
+    drive_paths = [
+        "/content/drive/MyDrive/better_me_llama3_merged",
+        "/content/drive/MyDrive/better_me_cbt_lora"
+    ]
+    for p in drive_paths:
+        if os.path.exists(p):
+            print(f"📁 [DRIVE DETECTED] Found model in Google Drive: '{p}'")
+            os.environ["HF_LLM_REPO"] = p
+            break
+
     setup_cloudflared()
     tunnel_url = start_tunnel()
 

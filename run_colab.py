@@ -110,6 +110,12 @@ if __name__ == "__main__":
     setup_cloudflared()
     tunnel_url = start_tunnel()
 
+    try:
+        import email_validator
+    except ImportError:
+        import subprocess
+        subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "email-validator"], check=False)
+
     print("\n🚀 Launching Better Me FastAPI Backend (Live GPU inference)...")
     import uvicorn
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, log_level="info")

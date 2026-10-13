@@ -182,7 +182,9 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
             patient_input = prompt
 
         alpaca_prompt = (
-            f"Below is an instruction that describes a clinical CBT therapeutic task, paired with an input containing the patient's distressed thought. Write a response that provides empathetic validation, Socratic cognitive restructuring, and a balanced reframe.\n\n"
+            f"Below is an instruction that describes a clinical CBT therapeutic task, paired with an input containing the patient's distressed thought. "
+            f"Write a direct, compassionate therapist response that provides empathetic validation, Socratic cognitive restructuring, and a balanced reframe. "
+            f"Speak directly to the patient in a single natural response without any notes, stage directions, or roleplay meta-commentary.\n\n"
             f"### Instruction:\n{instruction}\n\n"
             f"### Input:\n{patient_input}\n\n"
             f"### Response:\n"
@@ -205,8 +207,20 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 }
                 if isinstance(pad_id, int):
                     gen_kwargs["pad_token_id"] = pad_id
+                
+                # Multi-EOS token registration (handles standard EOS 128001 + LLaMA-3 EOT 128009)
+                eos_candidates = []
                 if self.unsloth_tokenizer.eos_token_id is not None:
-                    gen_kwargs["eos_token_id"] = self.unsloth_tokenizer.eos_token_id
+                    if isinstance(self.unsloth_tokenizer.eos_token_id, int):
+                        eos_candidates.append(self.unsloth_tokenizer.eos_token_id)
+                    elif isinstance(self.unsloth_tokenizer.eos_token_id, (list, tuple)):
+                        eos_candidates.extend(self.unsloth_tokenizer.eos_token_id)
+                for special_eos in [128001, 128009]:
+                    if special_eos not in eos_candidates:
+                        eos_candidates.append(special_eos)
+                if eos_candidates:
+                    gen_kwargs["eos_token_id"] = eos_candidates
+
                 if temperature and temperature > 0:
                     gen_kwargs["temperature"] = float(temperature)
                     gen_kwargs["do_sample"] = True

@@ -5,12 +5,37 @@ from typing import Tuple, Optional
 class ResponseParser:
     """
     Validates and sanitizes raw LLM output text.
-    Safely cleans prompts and ensures natural conversational delivery.
+    Safely cleans prompts, strips training metadata, removes meta-annotations/notes,
+    and ensures natural conversational delivery without cut-offs.
     """
 
-    PROMPT_LEAKAGE_PATTERNS = [
+    # Patterns that mark the beginning of leakage or prompt scaffolding to cut off
+    TRUNCATION_MARKERS = [
+        # Scaffolding markers like ### Your turn!, ### Instruction:, etc.
+        re.compile(r"\n*###.*$", re.DOTALL | re.IGNORECASE),
+        # Meta coaching notes like (Note: ..., [Note: ..., Note: ...
+        re.compile(r"\n*\s*(?:\(|\[)?Note(?:\s*:|\s+to|\s+that|\s+for)[\s\S]*$", re.IGNORECASE),
+        # Explanatory meta-commentary talking about "the patient" in third person
+        re.compile(r"\n*\s*By acknowledging the (?:patient|user|client)[\s\S]*$", re.IGNORECASE),
+        re.compile(r"\n*\s*(?:The|This)\s+Socratic\s+questioning(?:\s+technique)?[\s\S]*$", re.IGNORECASE),
+        re.compile(r"\n*\s*Please\s+continue\s+with[\s\S]*$", re.IGNORECASE),
+        re.compile(r"\n*\s*Please\s+provide\s+a\s+response[\s\S]*$", re.IGNORECASE),
+        # Delimiters
+        re.compile(r"\n*---+[\s\S]*$", re.MULTILINE),
+        re.compile(r"\n*===+[\s\S]*$", re.MULTILINE),
+    ]
+
+    # Stage directions in standalone parentheses: (Socratic questioning to identify...), (Validation and empathetic response), etc.
+    STAGE_DIRECTION_PATTERN = re.compile(
+        r"\n+\s*\((?:Socratic|Validation|Empathetic|Cognitive|Balanced|Technique|Step|Stage|Therapist|Patient|Goal|Objective|Rationale|Strategy)[^)]*\)",
+        re.IGNORECASE
+    )
+
+    PROMPT_LEAKAGE_HEADERS = [
         re.compile(r"^(?:system\s+instruction|directive|role|internal\s+context|authoritative\s+strategy)[:\s-].*?$", re.IGNORECASE | re.MULTILINE),
-        re.compile(r"###\s*Response:\s*", re.IGNORECASE)
+        re.compile(r"^###\s*Response:\s*", re.IGNORECASE | re.MULTILINE),
+        re.compile(r"^Better\s*Me:\s*", re.IGNORECASE),
+        re.compile(r"^Therapist:\s*", re.IGNORECASE),
     ]
 
     def validate_and_sanitize(self, raw_text: str, strategy: str) -> Tuple[bool, str, Optional[str]]:
@@ -19,19 +44,75 @@ class ResponseParser:
 
         clean_text = raw_text.strip()
 
-        # Clean leakage headers if present
-        for pat in self.PROMPT_LEAKAGE_PATTERNS:
+        # 1. Clean leakage headers at the beginning
+        for pat in self.PROMPT_LEAKAGE_HEADERS:
             clean_text = pat.sub("", clean_text).strip()
 
-        # Remove surrounding quotes if model wrapped response in quotes
+        # 2. Check if text has stage directions like (Socratic questioning...) separating turns
+        # If found, the text before the first stage direction is the primary therapist intervention
+        stage_match = self.STAGE_DIRECTION_PATTERN.search(clean_text)
+        if stage_match:
+            candidate = clean_text[:stage_match.start()].strip()
+            # If the candidate before the stage direction has substantial words (>= 8 words), keep that clean turn
+            if len(candidate.split()) >= 8:
+                clean_text = candidate
+
+        # 3. Truncate at scaffolding or meta-commentary markers
+        for marker in self.TRUNCATION_MARKERS:
+            clean_text = marker.sub("", clean_text).strip()
+
+        # 4. Strip any remaining inline stage tags like (Empathetic validation) or (Socratic questioning)
+        clean_text = re.sub(
+            r"\s*\((?:Socratic questioning|Empathetic validation|Validation|Cognitive reframing|Balanced reframe)\)\s*",
+            " ",
+            clean_text,
+            flags=re.IGNORECASE
+        ).strip()
+
+        # 5. Remove surrounding quotes if the entire text is wrapped in quotes
         if (clean_text.startswith('"') and clean_text.endswith('"')) or (clean_text.startswith("'") and clean_text.endswith("'")):
             clean_text = clean_text[1:-1].strip()
+
+        # 6. Ensure the response ends on a complete sentence if truncated mid-sentence
+        clean_text = self._ensure_complete_sentence(clean_text)
 
         words = clean_text.split()
         if len(words) < 2:
             return False, clean_text, "response_too_short"
 
         return True, clean_text, None
+
+    def _ensure_complete_sentence(self, text: str) -> str:
+        """
+        If text was cut off mid-thought without punctuation, trim back to the last complete sentence.
+        """
+        if not text:
+            return text
+
+        # Strip dangling unclosed quotes
+        text = text.rstrip("\"'")
+
+        if not text:
+            return text
+
+        if text[-1] in ".?!":
+            return text
+
+        # Find the last terminal punctuation mark (. ? !)
+        last_punct_idx = max(
+            text.rfind("."),
+            text.rfind("?"),
+            text.rfind("!")
+        )
+
+        if last_punct_idx != -1:
+            trimmed = text[:last_punct_idx + 1].strip()
+            # If trimmed portion has meaningful content (at least 6 words), return it
+            if len(trimmed.split()) >= 6:
+                return trimmed
+
+        # Fallback if no sentence punctuation found
+        return text + "."
 
 
 response_parser = ResponseParser()

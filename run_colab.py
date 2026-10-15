@@ -60,73 +60,70 @@ def check_gpu():
 
 def setup_drive_paths():
     print("\n" + "━" * 80)
-    print("📁 STEP 2/6: GOOGLE DRIVE PERSISTED MODELS DETECTION")
+    print("📁 STEP 2/6: 100% GOOGLE DRIVE PERSISTED MODELS DETECTION (OFFLINE DRIVE MODE)")
     print("━" * 80)
 
-    # Set Hugging Face Token if provided in env
-    if not os.getenv("HF_TOKEN") and os.getenv("HUGGINGFACE_TOKEN"):
-        os.environ["HF_TOKEN"] = os.environ["HUGGINGFACE_TOKEN"]
+    os.environ["USE_LOCAL_LLM"] = "true"
+    os.environ["LLM_PROVIDER"] = "local_hf"
 
-    # LLaMA-3 CBT LoRA / Merged Model
-    llama_paths = [
-        "/content/drive/MyDrive/better_me_llama3_merged",
+    # 1. Merged LLaMA-3 CBT Model from Google Drive
+    drive_llama = "/content/drive/MyDrive/better_me_llama3_merged"
+    alt_llama_paths = [
+        drive_llama,
         "/content/drive/MyDrive/better_me_cbt_lora",
         "/content/drive/MyDrive/llama3_merged",
         "/content/drive/MyDrive/cbt_llama3_merged",
-        "/content/drive/MyDrive/better-me-cbt-llama3-lora",
-        "/content/drive/MyDrive/merged_model",
-        "/content/drive/MyDrive/better_me_merged",
-        "/content/drive/MyDrive/Models/better_me_llama3_merged"
+        "/content/drive/MyDrive/merged_model"
     ]
     llama_found = None
-    for p in llama_paths:
+    for p in alt_llama_paths:
         if os.path.exists(p):
             llama_found = p
-            os.environ["HF_LLM_REPO"] = p
             break
 
     if llama_found:
-        print(f"✅ [FOUND IN DRIVE] LLaMA-3 CBT Merged/LoRA Model: '{llama_found}'")
+        os.environ["HF_LLM_REPO"] = llama_found
+        print(f"✅ [GOOGLE DRIVE] LLaMA-3 Merged CBT Model    : '{llama_found}'")
     else:
-        print(f"ℹ️ [HUGGING FACE]   LLaMA-3 CBT LoRA Model       : Using remote repo (awaiskhan4039/better-me-cbt-llama3-lora)")
+        print(f"⚠️ [NOTICE] LLaMA-3 not found at '{drive_llama}'. Make sure Drive is mounted!")
 
-    # BERT Distortion
-    bert_dist_paths = [
-        "/content/drive/MyDrive/bert_cognitive_distortions",
+    # 2. BERT Cognitive Distortion Model from Google Drive
+    drive_dist = "/content/drive/MyDrive/bert_cognitive_distortions"
+    alt_dist_paths = [
+        drive_dist,
         "/content/drive/MyDrive/bert_cognitive_distortions (Trained Model)",
-        "/content/drive/MyDrive/Models/Bert Model Training/bert_cognitive_distortions (Trained Model)",
-        "/content/drive/MyDrive/Models/bert_cognitive_distortions"
+        "/content/drive/MyDrive/Models/Bert Model Training/bert_cognitive_distortions (Trained Model)"
     ]
-    bert_dist_found = None
-    for p in bert_dist_paths:
+    dist_found = None
+    for p in alt_dist_paths:
         if os.path.exists(p):
-            bert_dist_found = p
-            os.environ["BERT_DISTORTION_PATH"] = p
+            dist_found = p
             break
 
-    if bert_dist_found:
-        print(f"✅ [FOUND IN DRIVE] BERT Distortion Model        : '{bert_dist_found}'")
+    if dist_found:
+        os.environ["BERT_DISTORTION_PATH"] = dist_found
+        print(f"✅ [GOOGLE DRIVE] BERT Distortion Model       : '{dist_found}'")
     else:
-        print(f"ℹ️ [HUGGING FACE]   BERT Distortion Model        : Using HuggingFace (awaiskhan4039/bert-cognitive-distortions)")
+        print(f"⚠️ [NOTICE] BERT Distortion not found at '{drive_dist}'")
 
-    # BERT Safety
-    bert_safety_paths = [
-        "/content/drive/MyDrive/bert_safety_classifier",
+    # 3. BERT Safety Classifier from Google Drive
+    drive_safety = "/content/drive/MyDrive/bert_safety_classifier"
+    alt_safety_paths = [
+        drive_safety,
         "/content/drive/MyDrive/bert_safety_classifier (Trained Model Files)",
-        "/content/drive/MyDrive/Models/Safety Classifier Model/bert_safety_classifier (Trained Model Files)",
-        "/content/drive/MyDrive/Models/bert_safety_classifier"
+        "/content/drive/MyDrive/Models/Safety Classifier Model/bert_safety_classifier (Trained Model Files)"
     ]
-    bert_safety_found = None
-    for p in bert_safety_paths:
+    safety_found = None
+    for p in alt_safety_paths:
         if os.path.exists(p):
-            bert_safety_found = p
-            os.environ["BERT_SAFETY_PATH"] = p
+            safety_found = p
             break
 
-    if bert_safety_found:
-        print(f"✅ [FOUND IN DRIVE] BERT Safety Model            : '{bert_safety_found}'")
+    if safety_found:
+        os.environ["BERT_SAFETY_PATH"] = safety_found
+        print(f"✅ [GOOGLE DRIVE] BERT Safety Classifier      : '{safety_found}'")
     else:
-        print(f"ℹ️ [HUGGING FACE]   BERT Safety Model            : Using HuggingFace (awaiskhan4039/bert-safety-classifier)")
+        print(f"⚠️ [NOTICE] BERT Safety not found at '{drive_safety}'")
 
 
 def preload_all_models():

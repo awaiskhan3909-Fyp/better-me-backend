@@ -19,11 +19,25 @@ class DistortionService:
         if self.loaded:
             return
 
-        model_dir = Path(DISTORTION_MODEL_DIR)
-        drive_dir = Path("/content/drive/MyDrive/bert_cognitive_distortions")
-        if drive_dir.exists():
-            print(f"📁 [DRIVE DETECTED] Found Cognitive Distortion model in Google Drive: {drive_dir}")
-            model_source = str(drive_dir)
+        import os
+        env_dist_path = os.getenv("BERT_DISTORTION_PATH")
+        drive_paths = [
+            Path(env_dist_path) if env_dist_path else None,
+            Path("/content/drive/MyDrive/bert_cognitive_distortions"),
+            Path("/content/drive/MyDrive/bert_cognitive_distortions (Trained Model)"),
+            Path("/content/drive/MyDrive/Models/Bert Model Training/bert_cognitive_distortions (Trained Model)"),
+            Path("/content/drive/MyDrive/Models/bert_cognitive_distortions")
+        ]
+        
+        found_drive_path = None
+        for dp in drive_paths:
+            if dp and dp.exists():
+                found_drive_path = dp
+                break
+
+        if found_drive_path:
+            print(f"📁 [DRIVE DETECTED] Found Cognitive Distortion model in Google Drive: {found_drive_path}")
+            model_source = str(found_drive_path)
         elif model_dir.exists():
             model_source = str(model_dir)
         else:

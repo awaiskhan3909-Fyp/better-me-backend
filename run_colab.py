@@ -63,10 +63,20 @@ def setup_drive_paths():
     print("📁 STEP 2/6: GOOGLE DRIVE PERSISTED MODELS DETECTION")
     print("━" * 80)
 
-    # LLaMA-3 CBT LoRA
+    # Set Hugging Face Token if provided in env
+    if not os.getenv("HF_TOKEN") and os.getenv("HUGGINGFACE_TOKEN"):
+        os.environ["HF_TOKEN"] = os.environ["HUGGINGFACE_TOKEN"]
+
+    # LLaMA-3 CBT LoRA / Merged Model
     llama_paths = [
         "/content/drive/MyDrive/better_me_llama3_merged",
-        "/content/drive/MyDrive/better_me_cbt_lora"
+        "/content/drive/MyDrive/better_me_cbt_lora",
+        "/content/drive/MyDrive/llama3_merged",
+        "/content/drive/MyDrive/cbt_llama3_merged",
+        "/content/drive/MyDrive/better-me-cbt-llama3-lora",
+        "/content/drive/MyDrive/merged_model",
+        "/content/drive/MyDrive/better_me_merged",
+        "/content/drive/MyDrive/Models/better_me_llama3_merged"
     ]
     llama_found = None
     for p in llama_paths:
@@ -76,23 +86,47 @@ def setup_drive_paths():
             break
 
     if llama_found:
-        print(f"✅ [FOUND IN DRIVE] LLaMA-3 CBT LoRA Model  : '{llama_found}'")
+        print(f"✅ [FOUND IN DRIVE] LLaMA-3 CBT Merged/LoRA Model: '{llama_found}'")
     else:
-        print(f"ℹ️ [HUGGING FACE]   LLaMA-3 CBT LoRA Model  : Using remote repo (awaiskhan4039/better-me-cbt-llama3-lora)")
+        print(f"ℹ️ [HUGGING FACE]   LLaMA-3 CBT LoRA Model       : Using remote repo (awaiskhan4039/better-me-cbt-llama3-lora)")
 
     # BERT Distortion
-    bert_dist_path = "/content/drive/MyDrive/bert_cognitive_distortions"
-    if os.path.exists(bert_dist_path):
-        print(f"✅ [FOUND IN DRIVE] BERT Distortion Model   : '{bert_dist_path}'")
+    bert_dist_paths = [
+        "/content/drive/MyDrive/bert_cognitive_distortions",
+        "/content/drive/MyDrive/bert_cognitive_distortions (Trained Model)",
+        "/content/drive/MyDrive/Models/Bert Model Training/bert_cognitive_distortions (Trained Model)",
+        "/content/drive/MyDrive/Models/bert_cognitive_distortions"
+    ]
+    bert_dist_found = None
+    for p in bert_dist_paths:
+        if os.path.exists(p):
+            bert_dist_found = p
+            os.environ["BERT_DISTORTION_PATH"] = p
+            break
+
+    if bert_dist_found:
+        print(f"✅ [FOUND IN DRIVE] BERT Distortion Model        : '{bert_dist_found}'")
     else:
-        print(f"ℹ️ [HUGGING FACE]   BERT Distortion Model   : Using HuggingFace (awaiskhan4039/bert-cognitive-distortions)")
+        print(f"ℹ️ [HUGGING FACE]   BERT Distortion Model        : Using HuggingFace (awaiskhan4039/bert-cognitive-distortions)")
 
     # BERT Safety
-    bert_safety_path = "/content/drive/MyDrive/bert_safety_classifier"
-    if os.path.exists(bert_safety_path):
-        print(f"✅ [FOUND IN DRIVE] BERT Safety Model       : '{bert_safety_path}'")
+    bert_safety_paths = [
+        "/content/drive/MyDrive/bert_safety_classifier",
+        "/content/drive/MyDrive/bert_safety_classifier (Trained Model Files)",
+        "/content/drive/MyDrive/Models/Safety Classifier Model/bert_safety_classifier (Trained Model Files)",
+        "/content/drive/MyDrive/Models/bert_safety_classifier"
+    ]
+    bert_safety_found = None
+    for p in bert_safety_paths:
+        if os.path.exists(p):
+            bert_safety_found = p
+            os.environ["BERT_SAFETY_PATH"] = p
+            break
+
+    if bert_safety_found:
+        print(f"✅ [FOUND IN DRIVE] BERT Safety Model            : '{bert_safety_found}'")
     else:
-        print(f"ℹ️ [HUGGING FACE]   BERT Safety Model       : Using HuggingFace (awaiskhan4039/bert-safety-classifier)")
+        print(f"ℹ️ [HUGGING FACE]   BERT Safety Model            : Using HuggingFace (awaiskhan4039/bert-safety-classifier)")
 
 
 def preload_all_models():

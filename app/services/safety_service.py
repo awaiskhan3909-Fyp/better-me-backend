@@ -64,10 +64,26 @@ class SafetyService:
             config = BertConfig.from_pretrained("bert-base-uncased", num_labels=len(self.label_names))
             self.model = BertForSequenceClassification(config)
 
-            drive_safety_path = Path("/content/drive/MyDrive/bert_safety_classifier/best_bert_safety_model.pt")
-            if drive_safety_path.exists():
-                print(f"📁 [DRIVE DETECTED] Found Safety Classifier model in Google Drive: {drive_safety_path}")
-                actual_weights_path = str(drive_safety_path)
+            import os
+            env_safety_path = os.getenv("BERT_SAFETY_PATH")
+            safety_drive_candidates = [
+                Path(env_safety_path) / "best_bert_safety_model.pt" if env_safety_path else None,
+                Path(env_safety_path) if env_safety_path and env_safety_path.endswith(".pt") else None,
+                Path("/content/drive/MyDrive/bert_safety_classifier/best_bert_safety_model.pt"),
+                Path("/content/drive/MyDrive/bert_safety_classifier (Trained Model Files)/best_bert_safety_model.pt"),
+                Path("/content/drive/MyDrive/Models/Safety Classifier Model/bert_safety_classifier (Trained Model Files)/best_bert_safety_model.pt"),
+                Path("/content/drive/MyDrive/Models/bert_safety_classifier/best_bert_safety_model.pt"),
+                Path("/content/drive/MyDrive/best_bert_safety_model.pt")
+            ]
+            found_safety_path = None
+            for sp in safety_drive_candidates:
+                if sp and sp.exists():
+                    found_safety_path = sp
+                    break
+
+            if found_safety_path:
+                print(f"📁 [DRIVE DETECTED] Found Safety Classifier model in Google Drive: {found_safety_path}")
+                actual_weights_path = str(found_safety_path)
             elif model_path.exists():
                 actual_weights_path = str(model_path)
             else:

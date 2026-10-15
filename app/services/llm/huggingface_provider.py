@@ -154,22 +154,28 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 instruction = (
                     f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion} and is speaking in Roman Urdu. "
                     f"Respond warmly and empathetically in natural, conversational Roman Urdu (Latin script Urdu). "
-                    f"Validate their emotional distress, gently reframe the unhelpful thought using Socratic questioning, and propose a balanced perspective."
+                    f"Keep your response concise (under 3-4 sentences). Do NOT interrogate the patient with multiple questions. "
+                    f"Validate their distress, and conclude with exactly ONE gentle Socratic question to help them examine this thought."
                 )
             else:
                 instruction = (
                     "You are Better Me, an empathetic clinical CBT companion. The patient is speaking in Roman Urdu. "
-                    "Respond with warmth, active listening, and thoughtful Socratic support in conversational Roman Urdu."
+                    "Respond with warmth, active listening, and calm emotional validation in conversational Roman Urdu (2-3 sentences). "
+                    "Do NOT overwhelm with multiple questions. Ask only ONE supportive question at the end."
                 )
         else:
             if target_distortion:
                 instruction = (
                     f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion}. "
-                    f"Validate their emotional state with deep empathy, gently challenge the distortion using Socratic questioning, and propose a balanced cognitive perspective."
+                    f"Validate their emotional distress with deep empathy in 2-3 sentences. "
+                    f"Do NOT bombard or interrogate the patient with multiple questions. "
+                    f"Conclude with exactly ONE focused, open-ended Socratic question to help them reflect on this thought."
                 )
             else:
                 instruction = (
-                    "You are Better Me, a clinical CBT companion. Provide empathetic validation, thoughtful active listening, and supportive Socratic guidance."
+                    "You are Better Me, a clinical CBT companion. "
+                    "Provide compassionate validation and thoughtful active listening in 2-3 sentences. "
+                    "Never ask multiple questions in one reply. Ask only ONE gentle, open-ended question at the end to explore how they are feeling."
                 )
 
         # Input is focused on the patient's distressed thought
@@ -183,8 +189,8 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
 
         alpaca_prompt = (
             f"Below is an instruction that describes a clinical CBT therapeutic task, paired with an input containing the patient's distressed thought. "
-            f"Write a direct, compassionate therapist response that provides empathetic validation, Socratic cognitive restructuring, and a balanced reframe. "
-            f"Speak directly to the patient in a single natural response without any notes, stage directions, or roleplay meta-commentary.\n\n"
+            f"Write a direct, compassionate therapist response that provides empathetic validation and ends with a single Socratic question. "
+            f"Keep it concise, supportive, and natural without repetitive questions, notes, or roleplay commentary.\n\n"
             f"### Instruction:\n{instruction}\n\n"
             f"### Input:\n{patient_input}\n\n"
             f"### Response:\n"
@@ -202,8 +208,9 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                     pad_id = eos_id[0] if isinstance(eos_id, (list, tuple)) else eos_id
 
                 gen_kwargs = {
-                    "max_new_tokens": max_tokens,
+                    "max_new_tokens": min(max_tokens, 150),
                     "use_cache": True,
+                    "repetition_penalty": 1.18,
                 }
                 if isinstance(pad_id, int):
                     gen_kwargs["pad_token_id"] = pad_id
@@ -264,8 +271,9 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
             try:
                 outputs = self.local_pipeline(
                     alpaca_prompt,
-                    max_new_tokens=max_tokens,
+                    max_new_tokens=min(max_tokens, 150),
                     temperature=temperature,
+                    repetition_penalty=1.18,
                     do_sample=True,
                     return_full_text=False
                 )

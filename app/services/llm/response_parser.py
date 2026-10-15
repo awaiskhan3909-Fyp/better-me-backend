@@ -19,7 +19,11 @@ class ResponseParser:
         re.compile(r"\n*\s*By acknowledging the (?:patient|user|client)[\s\S]*$", re.IGNORECASE),
         re.compile(r"\n*\s*(?:The|This)\s+Socratic\s+questioning(?:\s+technique)?[\s\S]*$", re.IGNORECASE),
         re.compile(r"\n*\s*Please\s+continue\s+with[\s\S]*$", re.IGNORECASE),
-        re.compile(r"\n*\s*Please\s+provide\s+a\s+response[\s\S]*$", re.IGNORECASE),
+        re.compile(r"\n*\s*Please\s+provide\s+(?:your|a)\s+response[\s\S]*$", re.IGNORECASE),
+        re.compile(r"\n*\s*(?:Your\s+response|Response)\s+should\s+not\s+exceed[\s\S]*$", re.IGNORECASE),
+        re.compile(r"\n*\s*As\s+per\s+the\s+guidelines[\s\S]*$", re.IGNORECASE),
+        re.compile(r"\n*\s*include\s+exactly\s+one\s+Socratic\s+question[\s\S]*$", re.IGNORECASE),
+        re.compile(r"\n*\s*Guidelines:?[\s\S]*$", re.IGNORECASE),
         # Delimiters
         re.compile(r"\n*---+[\s\S]*$", re.MULTILINE),
         re.compile(r"\n*===+[\s\S]*$", re.MULTILINE),
@@ -69,9 +73,14 @@ class ResponseParser:
             flags=re.IGNORECASE
         ).strip()
 
-        # 5. Remove surrounding quotes if the entire text is wrapped in quotes
+        # 5. Remove surrounding and dangling quotes
+        clean_text = clean_text.strip()
         if (clean_text.startswith('"') and clean_text.endswith('"')) or (clean_text.startswith("'") and clean_text.endswith("'")):
             clean_text = clean_text[1:-1].strip()
+        if clean_text.startswith(('"', "'")):
+            clean_text = clean_text[1:].strip()
+        if clean_text.endswith(('"', "'")):
+            clean_text = clean_text[:-1].strip()
 
         # 5.5 Deduplicate repeated sentences (e.g. repeated closing questions)
         clean_text = self._deduplicate_sentences(clean_text)

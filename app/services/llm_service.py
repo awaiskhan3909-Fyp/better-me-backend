@@ -118,6 +118,7 @@ class LLMService:
                     temperature=0.7,
                     max_tokens=240,
                     user_text=user_text,
+                    strategy=strategy,
                     distortion_name=distortion_pred.predicted_class if distortion_pred else None,
                     is_roman_urdu=is_roman_urdu,
                     recent_history=recent_history_str

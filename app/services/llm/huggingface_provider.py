@@ -142,59 +142,90 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
         user_text: Optional[str] = None,
         distortion_name: Optional[str] = None,
         is_roman_urdu: bool = False,
-        recent_history: Optional[str] = None
+        recent_history: Optional[str] = None,
+        strategy: Optional[str] = None,
+        **kwargs
     ) -> ProviderLLMResponse:
         start_time = time.time()
 
-        # Build clean clinical instruction matching the fine-tuned LoRA dataset
+        # Check if input is a simple greeting or casual conversational opener
+        clean_user_input = user_text.lower().strip() if user_text else ""
+        is_greeting = (
+            strategy == "normal_conversation"
+            or clean_user_input in ["hi", "hello", "hey", "salam", "assalam", "assalamoalaikum", "assalamualaykum", "good morning", "good afternoon", "good evening", "howdy", "sup", "yo"]
+            or any(clean_user_input.startswith(g) for g in ["hi ", "hello ", "hey ", "salam ", "assalam "])
+        )
+
         target_distortion = distortion_name if distortion_name and distortion_name not in ["None", "Normal", "no distortion"] else None
 
-        if is_roman_urdu:
-            if target_distortion:
+        if is_greeting:
+            if is_roman_urdu:
                 instruction = (
-                    f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion} and is speaking in Roman Urdu. "
-                    f"Respond warmly and empathetically in natural, conversational Roman Urdu (Latin script Urdu). "
-                    f"Keep your response concise (under 3-4 sentences). Do NOT interrogate the patient with multiple questions. "
-                    f"Validate their distress, and conclude with exactly ONE gentle Socratic question to help them examine this thought."
+                    "You are Better Me, a warm and welcoming clinical CBT companion. "
+                    "Respond with a warm, caring greeting in natural Roman Urdu (1-2 sentences). "
+                    "Welcome the user gently and ask how they are feeling today."
                 )
             else:
                 instruction = (
-                    "You are Better Me, an empathetic clinical CBT companion. The patient is speaking in Roman Urdu. "
-                    "Respond with warmth, active listening, and calm emotional validation in conversational Roman Urdu (2-3 sentences). "
-                    "Do NOT overwhelm with multiple questions. Ask only ONE supportive question at the end."
+                    "You are Better Me, a warm and welcoming clinical CBT companion. "
+                    "Respond to the patient's greeting with kindness and warmth in 1-2 friendly sentences. "
+                    "Welcome them and gently ask how they are doing or what brings them here today."
                 )
+            patient_input = user_text if user_text else "Hello"
+            alpaca_prompt = (
+                f"Below is an instruction that describes a welcoming clinical companion greeting task, paired with a greeting from the patient. "
+                f"Write a warm, gentle therapist greeting (1-2 sentences maximum).\n\n"
+                f"### Instruction:\n{instruction}\n\n"
+                f"### Input:\n{patient_input}\n\n"
+                f"### Response:\n"
+            )
         else:
-            if target_distortion:
-                instruction = (
-                    f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion}. "
-                    f"Validate their emotional distress with deep empathy in 2-3 sentences. "
-                    f"Do NOT bombard or interrogate the patient with multiple questions. "
-                    f"Conclude with exactly ONE focused, open-ended Socratic question to help them reflect on this thought."
-                )
+            if is_roman_urdu:
+                if target_distortion:
+                    instruction = (
+                        f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion} and is speaking in Roman Urdu. "
+                        f"Respond warmly and empathetically in natural, conversational Roman Urdu (Latin script Urdu). "
+                        f"Keep your response concise (under 3-4 sentences). Do NOT interrogate the patient with multiple questions. "
+                        f"Validate their distress, and conclude with exactly ONE gentle Socratic question to help them examine this thought."
+                    )
+                else:
+                    instruction = (
+                        "You are Better Me, an empathetic clinical CBT companion. The patient is speaking in Roman Urdu. "
+                        "Respond with warmth, active listening, and calm emotional validation in conversational Roman Urdu (2-3 sentences). "
+                        "Do NOT overwhelm with multiple questions. Ask only ONE supportive question at the end."
+                    )
             else:
-                instruction = (
-                    "You are Better Me, a clinical CBT companion. "
-                    "Provide compassionate validation and thoughtful active listening in 2-3 sentences. "
-                    "Never ask multiple questions in one reply. Ask only ONE gentle, open-ended question at the end to explore how they are feeling."
-                )
+                if target_distortion:
+                    instruction = (
+                        f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion}. "
+                        f"Validate their emotional distress with deep empathy in 2-3 sentences. "
+                        f"Do NOT bombard or interrogate the patient with multiple questions. "
+                        f"Conclude with exactly ONE focused, open-ended Socratic question to help them reflect on this thought."
+                    )
+                else:
+                    instruction = (
+                        "You are Better Me, a clinical CBT companion. "
+                        "Provide compassionate validation and thoughtful active listening in 2-3 sentences. "
+                        "Never ask multiple questions in one reply. Ask only ONE gentle, open-ended question at the end to explore how they are feeling."
+                    )
 
-        # Input is focused on the patient's distressed thought
-        if user_text:
-            if recent_history:
-                patient_input = f"{recent_history}\nCurrent Thought: {user_text}"
+            # Input is focused on the patient's distressed thought
+            if user_text:
+                if recent_history:
+                    patient_input = f"{recent_history}\nCurrent Thought: {user_text}"
+                else:
+                    patient_input = user_text
             else:
-                patient_input = user_text
-        else:
-            patient_input = prompt
+                patient_input = prompt
 
-        alpaca_prompt = (
-            f"Below is an instruction that describes a clinical CBT therapeutic task, paired with an input containing the patient's distressed thought. "
-            f"Write a direct, compassionate therapist response that provides empathetic validation and ends with a single Socratic question. "
-            f"Keep it concise, supportive, and natural without repetitive questions, notes, or roleplay commentary.\n\n"
-            f"### Instruction:\n{instruction}\n\n"
-            f"### Input:\n{patient_input}\n\n"
-            f"### Response:\n"
-        )
+            alpaca_prompt = (
+                f"Below is an instruction that describes a clinical CBT therapeutic task, paired with an input containing the patient's distressed thought. "
+                f"Write a direct, compassionate therapist response that provides empathetic validation and ends with a single Socratic question. "
+                f"Keep it concise, supportive, and natural without repetitive questions, notes, or roleplay commentary.\n\n"
+                f"### Instruction:\n{instruction}\n\n"
+                f"### Input:\n{patient_input}\n\n"
+                f"### Response:\n"
+            )
 
         # 1. Unsloth Native GPU Execution (Primary)
         if getattr(self, "unsloth_model", None) is not None and getattr(self, "unsloth_tokenizer", None) is not None:

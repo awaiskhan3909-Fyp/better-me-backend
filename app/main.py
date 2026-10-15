@@ -26,6 +26,10 @@ async def lifespan(app: FastAPI):
         if hasattr(llm_service.provider, "_init_local_pipeline"):
             print("[INFO] Initializing Fine-Tuned LLaMA-3 CBT LoRA on GPU...")
             llm_service.provider._init_local_pipeline()
+            if getattr(llm_service.provider, "unsloth_model", None) is not None:
+                print(f"[SUCCESS] LLaMA-3 CBT model ready on GPU: {llm_service.provider.repo_id}")
+            else:
+                print(f"[WARNING] LLaMA-3 pipeline status: {llm_service.provider.local_pipeline}")
     except Exception as e:
         print(f"[WARNING] LLM GPU initialization notice: {e}")
 

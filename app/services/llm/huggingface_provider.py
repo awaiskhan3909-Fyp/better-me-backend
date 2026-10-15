@@ -27,9 +27,32 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
         hf_token: Optional[str] = None,
         use_local_pipeline: bool = False
     ):
-        self.repo_id = repo_id or DEFAULT_CBT_HF_REPO
+        # 1. Autonomous Google Drive Persisted Model Discovery (Zero HF Token Dependency)
+        drive_paths = [
+            repo_id if repo_id and os.path.exists(repo_id) else None,
+            os.getenv("HF_LLM_REPO") if os.getenv("HF_LLM_REPO") and os.path.exists(os.getenv("HF_LLM_REPO")) else None,
+            "/content/drive/MyDrive/better_me_llama3_merged",
+            "/content/drive/MyDrive/better_me_cbt_lora",
+            "/content/drive/MyDrive/llama3_merged",
+            "/content/drive/MyDrive/cbt_llama3_merged",
+            "/content/drive/MyDrive/merged_model",
+            "/content/drive/MyDrive/Models/better_me_llama3_merged"
+        ]
+        found_drive_path = None
+        for dp in drive_paths:
+            if dp and os.path.exists(dp):
+                found_drive_path = dp
+                break
+
+        if found_drive_path:
+            self.repo_id = found_drive_path
+            print(f"📁 [DRIVE DETECTED] Found Fine-Tuned LLaMA-3 CBT model in Google Drive: {found_drive_path}")
+            self.use_local_pipeline = True
+        else:
+            self.repo_id = repo_id or os.getenv("HF_LLM_REPO") or DEFAULT_CBT_HF_REPO
+            self.use_local_pipeline = use_local_pipeline
+
         self.hf_token = hf_token or HF_TOKEN
-        self.use_local_pipeline = use_local_pipeline
         self.local_pipeline = None
         self.init_error = None
 
@@ -54,6 +77,22 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
         if getattr(self, "unsloth_model", None) is not None:
             logger.info("Unsloth model already initialized in memory.")
             return
+
+        # If repo_id points to a remote repo or missing path, re-scan Google Drive paths
+        if not os.path.exists(self.repo_id):
+            drive_candidates = [
+                os.getenv("HF_LLM_REPO"),
+                "/content/drive/MyDrive/better_me_llama3_merged",
+                "/content/drive/MyDrive/better_me_cbt_lora",
+                "/content/drive/MyDrive/llama3_merged",
+                "/content/drive/MyDrive/cbt_llama3_merged",
+                "/content/drive/MyDrive/merged_model"
+            ]
+            for cand in drive_candidates:
+                if cand and os.path.exists(cand):
+                    self.repo_id = cand
+                    print(f"📁 [DRIVE DETECTED] Re-binding LLaMA-3 to Google Drive model: {cand}")
+                    break
 
         # 1. Try Unsloth FastLanguageModel first (Ultra-fast, native format for this trained model)
         try:
@@ -125,12 +164,30 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
         except Exception as e:
             self.init_error = str(e)
             logger.warning(f"Could not initialize local pipeline: {e}. Falling back to remote HF API.")
+            print(f"⚠️ [LLM ERROR] Local pipeline init failed: {e}")
             self.local_pipeline = None
 
 
     def is_available(self) -> bool:
         if getattr(self, "unsloth_model", None) is not None or self.local_pipeline is not None:
             return True
+
+        # Lazy initialization attempt if on GPU or Drive model is found
+        try:
+            import torch
+            drive_exists = any(os.path.exists(p) for p in [
+                "/content/drive/MyDrive/better_me_llama3_merged",
+                "/content/drive/MyDrive/better_me_cbt_lora",
+                "/content/drive/MyDrive/llama3_merged"
+            ])
+            if torch.cuda.is_available() or drive_exists or self.use_local_pipeline:
+                print("[INFO] Attempting lazy initialization of LLaMA-3 on GPU...")
+                self._init_local_pipeline()
+                if getattr(self, "unsloth_model", None) is not None or self.local_pipeline is not None:
+                    return True
+        except Exception as lazy_err:
+            logger.warning(f"Lazy initialization failed: {lazy_err}")
+
         return bool(self.hf_token and self.hf_token.strip())
 
     def generate(
@@ -265,10 +322,11 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                     gen_kwargs["do_sample"] = True
                     gen_kwargs["top_p"] = 0.9
 
-                outputs = self.unsloth_model.generate(
-                    **inputs,
-                    **gen_kwargs
-                )
+                with torch.inference_mode():
+                    outputs = self.unsloth_model.generate(
+                        **inputs,
+                        **gen_kwargs
+                    )
 
                 # Slice newly generated tokens directly
                 generated_tokens = outputs[0][input_len:]
@@ -297,6 +355,19 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 traceback.print_exc()
                 logger.error(f"Unsloth generation error: {unsloth_gen_err}")
                 raise unsloth_gen_err
+            finally:
+                try:
+                    if 'inputs' in locals():
+                        del inputs
+                    if 'outputs' in locals():
+                        del outputs
+                    import torch
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                    import gc
+                    gc.collect()
+                except Exception:
+                    pass
 
         # 2. Local Pipeline Execution (Standard Transformers)
         if self.local_pipeline is not None and self.local_pipeline != "unsloth":

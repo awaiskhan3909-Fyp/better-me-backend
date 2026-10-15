@@ -263,6 +263,23 @@ def start_tunnel():
 
 if __name__ == "__main__":
     print_banner()
+
+    # Pre-Flight: Terminate orphan uvicorn / background python processes & release GPU VRAM
+    print("🧹 Pre-Flight: Terminating lingering uvicorn processes and releasing GPU VRAM...")
+    run_command("pkill -9 -f uvicorn")
+    run_command("pkill -9 -f 'python.*app.main'")
+    run_command("fuser -k 8000/tcp > /dev/null 2>&1")
+    time.sleep(1)
+
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            import gc
+            gc.collect()
+    except Exception:
+        pass
+
     check_gpu()
     setup_drive_paths()
 

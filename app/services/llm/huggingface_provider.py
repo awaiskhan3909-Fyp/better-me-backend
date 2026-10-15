@@ -74,8 +74,9 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
 
     def _init_local_pipeline(self):
         """Loads 4-bit model directly on available GPU with Unsloth optimization."""
-        if getattr(self, "unsloth_model", None) is not None:
-            logger.info("Unsloth model already initialized in memory.")
+        if getattr(self, "unsloth_model", None) is not None or self.local_pipeline is not None:
+            logger.info("LLaMA-3 model already initialized in memory.")
+            print("✅ [LLM] LLaMA-3 model is already initialized in memory. Skipping re-initialization.")
             return
 
         # If repo_id points to a remote repo or missing path, re-scan Google Drive paths
@@ -130,7 +131,8 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
             quantization_config = BitsAndBytesConfig(
                 load_in_4bit=True,
                 bnb_4bit_compute_dtype=torch.float16,
-                bnb_4bit_quant_type="nf4"
+                bnb_4bit_quant_type="nf4",
+                llm_int8_enable_fp32_cpu_offload=True
             )
 
             model = None

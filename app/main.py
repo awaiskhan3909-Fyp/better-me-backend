@@ -24,9 +24,11 @@ async def lifespan(app: FastAPI):
     try:
         from app.services.llm_service import llm_service
         if hasattr(llm_service.provider, "_init_local_pipeline"):
-            print("[INFO] Initializing Fine-Tuned LLaMA-3 CBT LoRA on GPU...")
-            llm_service.provider._init_local_pipeline()
-            if getattr(llm_service.provider, "unsloth_model", None) is not None:
+            if getattr(llm_service.provider, "unsloth_model", None) is None and llm_service.provider.local_pipeline is None:
+                print("[INFO] Initializing Fine-Tuned LLaMA-3 CBT LoRA on GPU...")
+                llm_service.provider._init_local_pipeline()
+
+            if getattr(llm_service.provider, "unsloth_model", None) is not None or llm_service.provider.local_pipeline is not None:
                 print(f"[SUCCESS] LLaMA-3 CBT model ready on GPU: {llm_service.provider.repo_id}")
             else:
                 print(f"[WARNING] LLaMA-3 pipeline status: {llm_service.provider.local_pipeline}")

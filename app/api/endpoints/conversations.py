@@ -218,17 +218,23 @@ def send_message_in_conversation(
 
 
         # Configure response schemas for frontend/analysis contract
-        if decision.strategy == ResponseStrategy.CBT_SUPPORT:
+        # Only suppress distortion if it is explicitly a casual greeting or identity query, or truly None
+        is_casual_opener = decision.reason in ["casual_conversation_or_greeting", "identity_and_role_query"]
+        if is_casual_opener or distortion_pred.predicted_class in ["None", "Normal", "null"]:
+            distortion_output = DistortionPrediction(
+                predicted_class="None",
+                confidence=0.999 if is_casual_opener else distortion_pred.confidence,
+                all_probabilities=distortion_pred.all_probabilities
+            )
             cbt_guidance = CBTGuidance(
-                detected_distortion=distortion_pred.predicted_class,
+                detected_distortion="None",
                 template_id=None,
-                title=f"Cognitive Distortion: {distortion_pred.predicted_class}",
+                title=None,
                 explanation=None,
                 reframing_question=None,
                 balanced_thought_guidance=ai_message_content,
                 small_action=None
             )
-            distortion_output = distortion_pred
         elif decision.strategy == ResponseStrategy.SAFETY_RESPONSE:
             cbt_guidance = CBTGuidance(
                 detected_distortion="Safety Intervention",
@@ -239,26 +245,18 @@ def send_message_in_conversation(
                 balanced_thought_guidance=ai_message_content,
                 small_action=None
             )
-            distortion_output = DistortionPrediction(
-                predicted_class="None",
-                confidence=0.0,
-                all_probabilities=distortion_pred.all_probabilities
-            )
+            distortion_output = distortion_pred
         else:
             cbt_guidance = CBTGuidance(
-                detected_distortion="None",
+                detected_distortion=distortion_pred.predicted_class,
                 template_id=None,
-                title=None,
+                title=f"Cognitive Distortion: {distortion_pred.predicted_class}",
                 explanation=None,
                 reframing_question=None,
                 balanced_thought_guidance=ai_message_content,
                 small_action=None
             )
-            distortion_output = DistortionPrediction(
-                predicted_class="None",
-                confidence=0.0,
-                all_probabilities=distortion_pred.all_probabilities
-            )
+            distortion_output = distortion_pred
 
         # Step 6: Create MessageAnalysis
         entities_data = [e.model_dump() for e in entities]

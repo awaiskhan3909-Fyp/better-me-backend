@@ -239,14 +239,14 @@ class ResponseDecisionService:
             and any(w in words for w in ["you", "u", "bot", "ai", "tum", "aap", "ap", "bhai"])
         )
 
-        # Cognitive distortion must have actual evidence OR very high confidence (>0.85) with explicit personal distress
         has_distress = any(w in words for w in [
             "sad", "depressed", "anxiety", "anxious", "scared", "fear", "fail", "failed", "failure",
-            "cry", "crying", "hate", "hates", "hopeless", "worthless", "useless", "alone",
+            "cry", "crying", "hate", "hates", "hopeless", "worthless", "useless", "alone", "upset",
             "preshan", "pareshan", "udas", "khof", "dar", "mushkil", "nakam", "ruined", "ruins", "dunya", "life"
         ])
 
-        if not is_question_to_bot and is_signal_present and (has_evidence or (confidence >= 0.85 and has_distress)):
+        # Cognitive distortion triggers CBT support if evidence is present, or if distress is expressed, or with high confidence
+        if not is_question_to_bot and is_signal_present and (has_evidence or has_distress or confidence >= 0.65):
             return ResponseDecision(
                 strategy=ResponseStrategy.CBT_SUPPORT,
                 priority=DecisionPriority.HIGH,

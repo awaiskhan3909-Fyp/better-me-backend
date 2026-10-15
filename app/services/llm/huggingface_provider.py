@@ -240,6 +240,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
 
                 gen_kwargs = {
                     "max_new_tokens": min(max_tokens, 150),
+                    "max_length": None,
                     "use_cache": True,
                     "repetition_penalty": 1.18,
                 }

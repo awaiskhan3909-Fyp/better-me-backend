@@ -20,6 +20,7 @@ class DistortionService:
             return
 
         import os
+        model_dir = Path(DISTORTION_MODEL_DIR)
         env_dist_path = os.getenv("BERT_DISTORTION_PATH")
         drive_paths = [
             Path(env_dist_path) if env_dist_path else None,
@@ -58,12 +59,18 @@ class DistortionService:
             import gc
             gc.collect()
 
-            label_map_path = model_dir / "label_map.json" if model_dir.exists() else None
-            if label_map_path and label_map_path.exists():
+            # Check model config first for id2label (standard in fine-tuned Hugging Face models)
+            if hasattr(self.model, "config") and getattr(self.model.config, "id2label", None):
+                self.label_map = {int(k): str(v) for k, v in self.model.config.id2label.items()}
+            
+            source_path = Path(model_source)
+            label_map_path = source_path / "label_map.json" if source_path.exists() and source_path.is_dir() else (model_dir / "label_map.json" if model_dir.exists() else None)
+            if not self.label_map and label_map_path and label_map_path.exists():
                 with open(label_map_path, "r", encoding="utf-8") as f:
                     raw_map = json.load(f)
                     self.label_map = {int(k): v for k, v in raw_map.items()}
-            else:
+            
+            if not self.label_map:
                 try:
                     from huggingface_hub import hf_hub_download
                     downloaded_label = hf_hub_download(repo_id=HF_DISTORTION_REPO, filename="label_map.json")

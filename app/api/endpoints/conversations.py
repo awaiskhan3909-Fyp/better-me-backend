@@ -210,7 +210,7 @@ def send_message_in_conversation(
         print(f"🤖 Model Executed    : {model_name} (Source: {response_source})")
         if llm_metadata_json.get("fallback_used"):
             print(f"⚠️ FALLBACK TRIGGERED: Reason = {llm_metadata_json.get('fallback_reason')}")
-        print(f"✨ AI Response Text  : {ai_message_content[:150]}{'...' if len(ai_message_content) > 150 else ''}")
+        print(f"✨ AI Response Text  : {ai_message_content.strip()}")
         latency = llm_metadata_json.get("latency_ms", "N/A")
         if isinstance(latency, (int, float)):
             print(f"⚡ GPU Latency       : {latency:.0f} ms")

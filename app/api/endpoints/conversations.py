@@ -40,6 +40,35 @@ from app.services.language_service import language_service
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
 
 
+@router.get("", response_model=List[ConversationResponse])
+def list_user_conversations(
+    user_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves all past conversations for a user, ordered by most recent.
+    Defaults to default user if user_id is omitted or invalid.
+    """
+    user_repo = UserRepository(db)
+    conv_repo = ConversationRepository(db)
+
+    target_user_id = None
+    if user_id:
+        try:
+            parsed_uuid = uuid.UUID(str(user_id))
+            user = user_repo.get_by_id(parsed_uuid)
+            if user:
+                target_user_id = user.id
+        except (ValueError, TypeError):
+            pass
+
+    if not target_user_id:
+        demo_user = user_repo.get_or_create_default_user()
+        target_user_id = demo_user.id
+
+    return conv_repo.get_user_conversations(target_user_id)
+
+
 @router.post("", response_model=ConversationResponse, status_code=status.HTTP_201_CREATED)
 def create_conversation(
     payload: CreateConversationRequest = CreateConversationRequest(),
@@ -47,20 +76,23 @@ def create_conversation(
 ):
     """
     Creates a new conversation session.
-    If user_id is omitted, defaults to creating/retrieving the default system user.
+    If user_id is omitted or invalid, defaults to the default system user.
     """
     user_repo = UserRepository(db)
     conv_repo = ConversationRepository(db)
 
+    target_user = None
     if payload.user_id:
-        user = user_repo.get_by_id(payload.user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail=f"User with ID {payload.user_id} not found.")
-    else:
-        user = user_repo.get_or_create_default_user()
+        try:
+            target_user = user_repo.get_by_id(payload.user_id)
+        except Exception:
+            pass
+
+    if not target_user:
+        target_user = user_repo.get_or_create_default_user()
 
     title = payload.title.strip() if payload.title else "New Session"
-    conversation = conv_repo.create_conversation(user_id=user.id, title=title)
+    conversation = conv_repo.create_conversation(user_id=target_user.id, title=title)
     return conversation
 
 

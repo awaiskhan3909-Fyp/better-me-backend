@@ -127,10 +127,21 @@ class PromptBuilder:
         # 4. Strategy-Specific Execution Directives
         prompt_parts.append("\n--- Response Strategy Directive ---")
         if contract.strategy == "normal_conversation":
-            prompt_parts.append(
-                "DIRECTIVE: Generate a short, warm, natural response. "
-                "Do NOT force CBT techniques or CBT reflection cards. Keep it friendly and concise."
-            )
+            if contract.decision_reason == "gratitude_or_session_wrap_up":
+                prompt_parts.append(
+                    "DIRECTIVE (THERAPEUTIC APPRECIATION & AFFIRMATION):\n"
+                    "The user is expressing gratitude, relief, or wrapping up after discussing their distress (e.g. 'ok thank you i love you', 'shukriya', 'thanks').\n"
+                    "1. DO NOT greet them as a stranger or ask 'What brought you here today?' as if starting over!\n"
+                    "2. Warmly acknowledge their gratitude (e.g. 'You are so very welcome. I'm really glad we could talk this through.').\n"
+                    "3. Validate their effort: Gently commend their courage in sharing and reflecting on difficult feelings today.\n"
+                    "4. Reassure them that you are always here whenever they want to talk or check in.\n"
+                    "Target Length: 2-3 warm, comforting, professional sentences."
+                )
+            else:
+                prompt_parts.append(
+                    "DIRECTIVE: Generate a short, warm, natural response. "
+                    "Do NOT force CBT techniques or CBT reflection cards. Keep it friendly and concise."
+                )
         elif contract.strategy == "exploratory_follow_up":
             prompt_parts.append(
                 "DIRECTIVE (CLINICAL SOCRATIC EXPLORATION — GUIDED DISCOVERY):\n"

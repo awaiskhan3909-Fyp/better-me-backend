@@ -133,13 +133,38 @@ class ResponseDecisionService:
             )
 
         # -------------------------------------------------------------
-        # RULE 2A — GREETINGS & CASUAL CHAT
+        # RULE 2A-1 — GRATITUDE, AFFIRMATION & SESSION WRAP-UP
+        # (e.g. "thank you", "thanks", "ok thank you i love you", "shukriya", "jazakallah", "bye")
+        # -------------------------------------------------------------
+        GRATITUDE_WRAPUP_PATTERNS = [
+            r"\b(?:thanks|thank\s+you|thx|tysm|shukriya|jazakallah|bohut\s+shukriya|shukran)\b",
+            r"\b(?:love\s+you|appreciate\s+you|appreciate\s+it|you\s+helped\s+me|feeling\s+better\s+now|helped\s+a\s+lot)\b",
+            r"\b(?:bye|goodbye|allah\s+hafiz|see\s+you|take\s+care|talk\s+later)\b"
+        ]
+        is_gratitude = any(bool(re.search(pat, text_lower)) for pat in GRATITUDE_WRAPUP_PATTERNS)
+
+        has_prior_history = bool(
+            context.conversation_context
+            and context.conversation_context.has_history
+            and context.conversation_context.history_count > 0
+        )
+
+        if is_gratitude:
+            return ResponseDecision(
+                strategy=ResponseStrategy.NORMAL_CONVERSATION,
+                priority=DecisionPriority.NORMAL,
+                reason="gratitude_or_session_wrap_up" if has_prior_history else "casual_conversation_or_greeting",
+                distortion_detected="None",
+                safety_risk_level=context.safety_result.risk_level
+            )
+
+        # -------------------------------------------------------------
+        # RULE 2A-2 — GREETINGS & CASUAL CHAT INTROS
         # -------------------------------------------------------------
         GREETING_PATTERNS = [
             r"\b(?:hi|hello|hey|salam|assalam|assalamoalaikum|assalamualaykum|greetings|howdy|sup|yo)\b",
             r"\b(?:good\s+morning|good\s+afternoon|good\s+evening|good\s+night)\b",
-            r"\b(?:how\s+are\s+you|hows\s+it\s+going|kese\s+ho|kaise\s+ho|kya\s+haal\s+hai|kya\s+hal)\b",
-            r"\b(?:thanks|thank\s+you|shukriya|jazakallah|bye|goodbye|allah\s+hafiz)\b"
+            r"\b(?:how\s+are\s+you|hows\s+it\s+going|kese\s+ho|kaise\s+ho|kya\s+haal\s+hai|kya\s+hal)\b"
         ]
         is_greeting = (
             text_clean in self.GREETINGS

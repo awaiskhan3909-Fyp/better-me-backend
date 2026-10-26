@@ -17,6 +17,13 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=1)
 
 
+class SyncPasswordRequest(BaseModel):
+    email: str = Field(..., description="User email address")
+    password: str = Field(..., min_length=1)
+    user_id: Optional[uuid.UUID] = None
+    full_name: Optional[str] = None
+
+
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: str

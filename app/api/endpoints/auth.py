@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.db.repositories.user_repository import UserRepository
-from app.schemas.auth import RegisterRequest, LoginRequest, AuthResponse, UserResponse
+from app.schemas.auth import RegisterRequest, LoginRequest, SyncPasswordRequest, AuthResponse, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -64,6 +64,37 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
     )
 
     return AuthResponse(user=user_data, message="Logged in successfully.")
+
+
+@router.post("/sync-password", response_model=AuthResponse)
+def sync_password(payload: SyncPasswordRequest, db: Session = Depends(get_db)):
+    user_repo = UserRepository(db)
+    user = user_repo.get_by_email(payload.email)
+    hashed_pw = user_repo.hash_password(payload.password)
+
+    if user:
+        user.password_hash = hashed_pw
+        if payload.full_name and not user.full_name:
+            user.full_name = payload.full_name
+        db.commit()
+        db.refresh(user)
+    else:
+        user = user_repo.create_user(
+            email=payload.email,
+            password_hash=hashed_pw,
+            full_name=payload.full_name
+        )
+
+    intake = user_repo.get_intake_assessment(user.id)
+    user_data = UserResponse(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        is_active=user.is_active,
+        has_completed_intake=bool(intake),
+        created_at=user.created_at
+    )
+    return AuthResponse(user=user_data, message="Password synchronized successfully.")
 
 
 @router.get("/me/{user_id}", response_model=UserResponse)

@@ -59,9 +59,28 @@ class SafetyService:
 
         try:
             print("[INFO] Loading Safety Classifier BERT model & tokenizer...")
-            tokenizer_source = str(distortion_dir) if distortion_dir.exists() else "bert-base-uncased"
+            # Check Google Drive distortion path for local tokenizer & config to avoid Hugging Face calls
+            env_dist_path = os.getenv("BERT_DISTORTION_PATH")
+            possible_tokenizer_paths = [
+                Path(env_dist_path) if env_dist_path else None,
+                distortion_dir if distortion_dir.exists() else None,
+                Path("/content/drive/MyDrive/bert_cognitive_distortions"),
+                Path("/content/drive/MyDrive/bert_cognitive_distortions (Trained Model)"),
+                Path("/content/drive/MyDrive/Models/Bert Model Training/bert_cognitive_distortions (Trained Model)"),
+            ]
+            local_tokenizer_source = None
+            for p in possible_tokenizer_paths:
+                if p and p.exists():
+                    local_tokenizer_source = str(p)
+                    break
+
+            tokenizer_source = local_tokenizer_source or "bert-base-uncased"
+            print(f"[INFO] Loading Safety Tokenizer from: {tokenizer_source}")
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_source)
-            config = BertConfig.from_pretrained("bert-base-uncased", num_labels=len(self.label_names))
+            try:
+                config = BertConfig.from_pretrained(tokenizer_source, num_labels=len(self.label_names))
+            except Exception:
+                config = BertConfig.from_pretrained("bert-base-uncased", num_labels=len(self.label_names))
             self.model = BertForSequenceClassification(config)
 
             import os

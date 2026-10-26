@@ -71,21 +71,21 @@ def setup_kaggle_models():
     # 1. LLaMA-3 Merged CBT Model
     if not llama_path.exists() or len(list(llama_path.glob("*"))) == 0:
         print("⏳ [1/3] Downloading LLaMA-3 Merged CBT Model from Google Drive...")
-        gdown.download_folder("https://drive.google.com/drive/folders/14RSnQ2XxlxYpdKlN6yejzQUJ_5kMAKmz", output=str(llama_path), quiet=False, remaining_ok=True)
+        gdown.download_folder("https://drive.google.com/drive/folders/14RSnQ2XxlxYpdKlN6yejzQUJ_5kMAKmz", output=str(llama_path), quiet=False)
     else:
         print(f"✅ [1/3] LLaMA-3 Merged CBT Model found: '{llama_path}'")
 
     # 2. BERT Safety Classifier
     if not safety_path.exists() or len(list(safety_path.glob("*"))) == 0:
         print("⏳ [2/3] Downloading BERT Safety Classifier from Google Drive...")
-        gdown.download_folder("https://drive.google.com/drive/folders/1Ia5E7XkEdCqONGBY965813Ig8Fyg5hNo", output=str(safety_path), quiet=False, remaining_ok=True)
+        gdown.download_folder("https://drive.google.com/drive/folders/1Ia5E7XkEdCqONGBY965813Ig8Fyg5hNo", output=str(safety_path), quiet=False)
     else:
         print(f"✅ [2/3] BERT Safety Classifier found: '{safety_path}'")
 
     # 3. BERT Cognitive Distortions
     if not dist_path.exists() or len(list(dist_path.glob("*"))) == 0:
         print("⏳ [3/3] Downloading BERT Cognitive Distortions from Google Drive...")
-        gdown.download_folder("https://drive.google.com/drive/folders/1nyQ121MC-kZYtbDqYHfwUkdLI086WAwV", output=str(dist_path), quiet=False, remaining_ok=True)
+        gdown.download_folder("https://drive.google.com/drive/folders/1nyQ121MC-kZYtbDqYHfwUkdLI086WAwV", output=str(dist_path), quiet=False)
     else:
         print(f"✅ [3/3] BERT Cognitive Distortions found: '{dist_path}'")
 

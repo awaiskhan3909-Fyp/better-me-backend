@@ -1,3 +1,4 @@
+import os
 import re
 import torch
 from pathlib import Path
@@ -83,7 +84,6 @@ class SafetyService:
                 config = BertConfig.from_pretrained("bert-base-uncased", num_labels=len(self.label_names))
             self.model = BertForSequenceClassification(config)
 
-            import os
             env_safety_path = os.getenv("BERT_SAFETY_PATH")
             safety_drive_candidates = [
                 Path(env_safety_path) / "best_bert_safety_model.pt" if env_safety_path else None,

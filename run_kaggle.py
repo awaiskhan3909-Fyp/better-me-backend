@@ -250,11 +250,9 @@ if __name__ == "__main__":
     print("━" * 80)
     print("Listening on 0.0.0.0:8000. Incoming requests and GPU inference tokens will print live below:\n")
 
-    try:
-        import nest_asyncio
-        nest_asyncio.apply()
-    except Exception:
-        pass
-
-    import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, log_level="warning")
+    subprocess.run([
+        sys.executable, "-m", "uvicorn", "app.main:app",
+        "--host", "0.0.0.0",
+        "--port", "8000",
+        "--log-level", "info"
+    ])

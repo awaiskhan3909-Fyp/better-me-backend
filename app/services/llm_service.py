@@ -58,7 +58,10 @@ class LLMService:
         cbt_guidance: Optional[CBTGuidance] = None,
         conversation_context: Optional[ConversationContext] = None,
         clinical_memory: Optional[str] = None,
-        is_roman_urdu: bool = False
+        is_roman_urdu: bool = False,
+        therapy_stage: Optional[str] = None,
+        session_objective: Optional[str] = None,
+        asked_questions: Optional[List[str]] = None,
     ) -> LLMResult:
         """
         Main entry point for generating strategy-guided conversational output.
@@ -66,7 +69,13 @@ class LLMService:
         # 1. STRICT SAFETY OVERRIDE GATE
         if strategy == "safety_response":
             fallback_text, _ = fallback_service.generate_fallback(
-                user_text, strategy, cbt_guidance, is_roman_urdu=is_roman_urdu
+                user_text=user_text,
+                strategy=strategy,
+                decision_reason=decision_reason,
+                therapy_stage=therapy_stage,
+                cbt_guidance=cbt_guidance,
+                distortion_pred=distortion_pred,
+                is_roman_urdu=is_roman_urdu
             )
             return LLMResult(
                 content=fallback_text,
@@ -80,7 +89,8 @@ class LLMService:
                     "model": "deterministic_safety_override",
                     "strategy": strategy,
                     "fallback_used": False,
-                    "reason": "deterministic_safety_override"
+                    "reason": "deterministic_safety_override",
+                    "therapy_stage": therapy_stage or "safety_override"
                 }
             )
 
@@ -90,10 +100,13 @@ class LLMService:
             strategy=strategy,
             decision_reason=decision_reason,
             safety_risk_level=safety_risk_level,
+            therapy_stage=therapy_stage,
+            session_objective=session_objective,
             distortion_pred=distortion_pred,
             entities=entities,
             cbt_guidance=cbt_guidance,
             conversation_context=conversation_context,
+            asked_questions=asked_questions,
             clinical_memory=clinical_memory,
             is_roman_urdu=is_roman_urdu
         )
@@ -174,9 +187,12 @@ class LLMService:
         fallback_content, fallback_cbt_data = fallback_service.generate_fallback(
             user_text=user_text,
             strategy=strategy,
+            decision_reason=decision_reason,
+            therapy_stage=therapy_stage,
             cbt_guidance=cbt_guidance,
             conversation_context=conversation_context,
             distortion_pred=distortion_pred,
+            asked_questions=asked_questions,
             is_roman_urdu=is_roman_urdu
         )
 
@@ -184,13 +200,14 @@ class LLMService:
             content=fallback_content,
             response_source="conversational_llm_fallback",
             response_type="therapeutic_reframe" if strategy == "cbt_support" else "conversational_dialogue",
-            model_name="template_fallback_v1",
+            model_name="cbt_stage_fallback_v3",
             cbt_data=fallback_cbt_data,
             llm_metadata={
                 "prompt_version": PROMPT_VERSION,
                 "provider": "offline_fallback",
-                "model": "template_fallback_v1",
+                "model": "cbt_stage_fallback_v3",
                 "strategy": strategy,
+                "therapy_stage": therapy_stage or "exploration",
                 "fallback_used": True,
                 "fallback_reason": fallback_reason
             }

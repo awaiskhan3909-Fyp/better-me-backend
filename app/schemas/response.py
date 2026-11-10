@@ -56,7 +56,9 @@ class ResponseDecisionDetail(BaseModel):
     reason: str
     distortion_detected: Optional[str] = None
     safety_risk_level: str = "Safe"
-    decision_version: str = "v1"
+    decision_version: str = "v3"
+    therapy_stage: Optional[str] = None
+    session_objective: Optional[str] = None
 
 
 class AnalyzeResponse(BaseModel):

@@ -10,8 +10,14 @@ PROJECT_ROOT = BACKEND_DIR.parent
 load_dotenv(BACKEND_DIR / ".env")
 load_dotenv(PROJECT_ROOT / ".env")
 
-DISTORTION_MODEL_DIR = PROJECT_ROOT / "Models" / "Bert Model Training" / "bert_cognitive_distortions (Trained Model)"
-SAFETY_MODEL_PATH = PROJECT_ROOT / "Models" / "Safety Classifier Model" / "bert_safety_classifier (Trained Model Files)" / "best_bert_safety_model.pt"
+LOCAL_MODELS_DIR = PROJECT_ROOT / "Models"
+if not LOCAL_MODELS_DIR.exists():
+    candidate = PROJECT_ROOT.parent / "Better Me-App-FYP" / "Models"
+    if candidate.exists():
+        LOCAL_MODELS_DIR = candidate
+
+DISTORTION_MODEL_DIR = LOCAL_MODELS_DIR / "Bert Model Training" / "bert_cognitive_distortions (Trained Model)"
+SAFETY_MODEL_PATH = LOCAL_MODELS_DIR / "Safety Classifier Model" / "bert_safety_classifier (Trained Model Files)" / "best_bert_safety_model.pt"
 
 # Resolve CBT JSON Templates directory (check local backend bundle, then workspace root)
 CBT_TEMPLATES_DIR = BACKEND_DIR / "CBT JSON Templates"

@@ -42,3 +42,23 @@ class ConversationRepository:
             else:
                 self.db.flush()
         return conversation
+
+    def update_title(self, conversation_id: uuid.UUID, title: str, commit: bool = True) -> Optional[Conversation]:
+        conversation = self.get_by_id(conversation_id)
+        if conversation:
+            conversation.title = title.strip()
+            if commit:
+                self.db.commit()
+                self.db.refresh(conversation)
+            else:
+                self.db.flush()
+        return conversation
+
+    def delete_conversation(self, conversation_id: uuid.UUID, commit: bool = True) -> bool:
+        conversation = self.get_by_id(conversation_id)
+        if conversation:
+            self.db.delete(conversation)
+            if commit:
+                self.db.commit()
+            return True
+        return False

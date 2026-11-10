@@ -49,6 +49,7 @@ class Conversation(Base):
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="conversation", cascade="all, delete-orphan", order_by="Message.sequence_number")
     analyses: Mapped[List["MessageAnalysis"]] = relationship("MessageAnalysis", back_populates="conversation", cascade="all, delete-orphan")
     ai_responses: Mapped[List["AIResponse"]] = relationship("AIResponse", back_populates="conversation", cascade="all, delete-orphan")
+    session_state: Mapped[Optional["ConversationSessionState"]] = relationship("ConversationSessionState", back_populates="conversation", uselist=False, cascade="all, delete-orphan")
 
 
 class Message(Base):
@@ -211,3 +212,35 @@ class CBTThoughtRecord(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="thought_records")
+
+
+class ConversationSessionState(Base):
+    __tablename__ = "conversation_session_states"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+
+    current_stage: Mapped[str] = mapped_column(String(50), default="check_in", nullable=False)
+    stage_turn_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_turns: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    identified_trigger: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    automatic_thought: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    identified_distortion: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    distortion_confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    distortion_evidence: Mapped[list] = mapped_column(JSON_TYPE, default=list, nullable=False)
+    evidence_gated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    balanced_perspective: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    action_plan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    asked_questions: Mapped[list] = mapped_column(JSON_TYPE, default=list, nullable=False)
+    session_goals: Mapped[list] = mapped_column(JSON_TYPE, default=list, nullable=False)
+    metadata_json: Mapped[dict] = mapped_column(JSON_TYPE, default=dict, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    conversation: Mapped["Conversation"] = relationship("Conversation", back_populates="session_state")
+

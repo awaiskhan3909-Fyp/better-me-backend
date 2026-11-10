@@ -1,6 +1,7 @@
 import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -10,7 +11,7 @@ from app.db.repositories.message_repository import MessageRepository
 from app.db.repositories.analysis_repository import AnalysisRepository
 from app.db.repositories.ai_response_repository import AIResponseRepository
 
-from app.schemas.request import CreateConversationRequest, CreateMessageRequest
+from app.schemas.request import CreateConversationRequest, CreateMessageRequest, UpdateConversationRequest
 from app.schemas.response import (
     ConversationResponse,
     MessageDetailResponse,
@@ -36,6 +37,9 @@ from app.services.response_decision_service import (
 from app.services.llm_service import llm_service, LLMResult
 from app.services.clinical_memory_service import clinical_memory_service
 from app.services.language_service import language_service
+from app.services.session_state_service import session_state_service, TherapyStage
+from app.services.llm.response_parser import response_parser
+from app.services.pdf_report_service import pdf_report_service
 
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
 
@@ -109,6 +113,33 @@ def get_conversation(
     return conversation
 
 
+@router.patch("/{conversation_id}", response_model=ConversationResponse)
+def update_conversation_title(
+    conversation_id: uuid.UUID,
+    payload: UpdateConversationRequest,
+    db: Session = Depends(get_db)
+):
+    """Updates conversation title (renaming)."""
+    conv_repo = ConversationRepository(db)
+    conversation = conv_repo.update_title(conversation_id, payload.title)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    return conversation
+
+
+@router.delete("/{conversation_id}", status_code=status.HTTP_200_OK)
+def delete_conversation(
+    conversation_id: uuid.UUID,
+    db: Session = Depends(get_db)
+):
+    """Deletes a conversation and all its messages."""
+    conv_repo = ConversationRepository(db)
+    success = conv_repo.delete_conversation(conversation_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    return {"status": "success", "message": "Conversation deleted successfully."}
+
+
 @router.get("/{conversation_id}/messages", response_model=List[MessageDetailResponse])
 def get_conversation_messages(
     conversation_id: uuid.UUID,
@@ -155,12 +186,37 @@ def send_message_in_conversation(
         raise HTTPException(status_code=404, detail="Conversation not found.")
 
     try:
-        # Step 1: Retrieve recent conversation context
+        # Step 1: Retrieve recent conversation context & session state
         conv_context = conversation_manager.get_conversation_context(
             conversation_id=conversation_id,
             db=db,
             current_text=text
         )
+        session_state = session_state_service.get_or_create_session_state(
+            conversation_id=conversation_id,
+            db=db
+        )
+
+        # Auto-title conversation with descriptive topic if currently generic
+        curr_title = (conversation.title or "").strip()
+        if curr_title in ["New Session", "Therapy Session"] or curr_title.startswith("Session "):
+            t_low = text.lower()
+            if any(k in t_low for k in ["exam", "study", "marks", "grade", "test", "fail", "course", "assignment"]):
+                conversation.title = "Academic & Exam Stress"
+            elif any(k in t_low for k in ["work", "meeting", "presentation", "boss", "manager", "job", "office", "colleague"]):
+                conversation.title = "Workplace Performance Worry"
+            elif any(k in t_low for k in ["friend", "relationship", "people", "hate me", "lonely", "family", "partner"]):
+                conversation.title = "Interpersonal Reflection"
+            elif any(k in t_low for k in ["heart", "chest", "breath", "panic", "shaking", "sleep", "insomnia"]):
+                conversation.title = "Somatic Anxiety Relief"
+            elif any(k in t_low for k in ["perfect", "mistake", "100%", "worthless"]):
+                conversation.title = "Overcoming Perfectionism"
+            else:
+                words = [w for w in re.sub(r"[^\w\s]", "", text).split() if len(w) > 2]
+                if len(words) >= 2:
+                    conversation.title = " ".join(words[:4]).title()
+                else:
+                    conversation.title = "CBT Therapy Reflection"
 
         # Step 2: Create User Message
         user_message = msg_repo.add_message(
@@ -190,7 +246,8 @@ def send_message_in_conversation(
             safety_result=safety_pred,
             distortion_result=distortion_pred,
             entities=entities,
-            conversation_context=conv_context
+            conversation_context=conv_context,
+            session_state=session_state
         )
         decision: ResponseDecision = response_decision_service.evaluate_decision(decision_context)
 
@@ -216,7 +273,10 @@ def send_message_in_conversation(
             cbt_guidance=default_cbt_guidance,
             conversation_context=conv_context,
             clinical_memory=clinical_memory_briefing,
-            is_roman_urdu=lang_result.is_roman_urdu
+            is_roman_urdu=lang_result.is_roman_urdu,
+            therapy_stage=decision.therapy_stage,
+            session_objective=decision.session_objective,
+            asked_questions=session_state.asked_questions if session_state else []
         )
 
         ai_message_content = llm_result.content
@@ -230,6 +290,27 @@ def send_message_in_conversation(
         llm_metadata_json["distortion_accuracy"] = "99.85%"
         llm_metadata_json["model_display_name"] = "Llama-3-8B-CBT-LoRA"
 
+        # Update structured CBT session state
+        ai_question = response_parser.extract_question(ai_message_content)
+        stage_val = decision.therapy_stage
+        valid_stages = {s.value for s in TherapyStage}
+        if stage_val in valid_stages:
+            target_stage = TherapyStage(stage_val)
+        elif session_state and session_state.current_stage in valid_stages:
+            target_stage = TherapyStage(session_state.current_stage)
+        else:
+            target_stage = TherapyStage.PROBLEM_EXPLORATION
+
+        session_state_service.record_turn(
+            state=session_state,
+            next_stage=target_stage,
+            user_text=text,
+            ai_question_asked=ai_question,
+            distortion_label=decision.distortion_detected,
+            distortion_confidence=distortion_pred.confidence,
+            is_evidence_gated=(decision.distortion_detected not in ["None", "Normal", None])
+        )
+
         # Live Colab Terminal Telemetry Log
         print("\n" + "=" * 70)
         print(f"📩 [NEW CHAT MESSAGE RECEIVED]")
@@ -237,6 +318,7 @@ def send_message_in_conversation(
         safety_conf = (getattr(safety_pred, "confidence", None) or safety_pred.probabilities.get(safety_pred.risk_level, 0.98)) * 100
         print(f"🛡️ BERT Safety Risk  : {safety_pred.risk_level} ({safety_conf:.1f}%)")
         print(f"🧠 BERT Distortion   : {distortion_pred.predicted_class} ({distortion_pred.confidence * 100:.1f}%)")
+        print(f"🎯 CBT Therapy Stage : {decision.therapy_stage} ({decision.reason})")
         ner_tags = ", ".join([f"{e.label}: {e.text}" for e in entities]) if entities else "None"
         print(f"🏷️ Context NER Tags  : {ner_tags}")
         print(f"🤖 Model Executed    : {model_name} (Source: {response_source})")
@@ -249,14 +331,28 @@ def send_message_in_conversation(
         print("=" * 70 + "\n")
 
 
-        # Configure response schemas for frontend/analysis contract
-        # Only suppress distortion if it is explicitly a casual greeting or identity query, or truly None
-        is_casual_opener = decision.reason in ["casual_conversation_or_greeting", "identity_and_role_query"]
-        if is_casual_opener or distortion_pred.predicted_class in ["None", "Normal", "null"]:
+        # Configure response schemas for frontend/analysis contract (Evidence Gated)
+        clean_pred_class = response_decision_service.sanitize_distortion_label(distortion_pred.predicted_class)
+        clean_detected = response_decision_service.sanitize_distortion_label(decision.distortion_detected)
+
+        is_distortion_gated = (
+            clean_detected
+            and clean_detected not in ["None", "Normal", "null"]
+            and not clean_detected.startswith("LABEL_")
+            and decision.strategy == ResponseStrategy.CBT_SUPPORT
+        )
+
+        # Sanitize all_probabilities keys to never contain LABEL_
+        sanitized_probs = {}
+        for k, v in distortion_pred.all_probabilities.items():
+            clean_k = response_decision_service.sanitize_distortion_label(k)
+            sanitized_probs[clean_k] = v
+
+        if not is_distortion_gated:
             distortion_output = DistortionPrediction(
                 predicted_class="None",
-                confidence=0.999 if is_casual_opener else distortion_pred.confidence,
-                all_probabilities=distortion_pred.all_probabilities
+                confidence=distortion_pred.confidence if clean_detected == "None" else 0.999,
+                all_probabilities=sanitized_probs
             )
             cbt_guidance = CBTGuidance(
                 detected_distortion="None",
@@ -277,18 +373,27 @@ def send_message_in_conversation(
                 balanced_thought_guidance=ai_message_content,
                 small_action=None
             )
-            distortion_output = distortion_pred
+            distortion_output = DistortionPrediction(
+                predicted_class="None",
+                confidence=distortion_pred.confidence,
+                all_probabilities=sanitized_probs
+            )
         else:
+            final_class = clean_detected if clean_detected not in ["None", "Normal"] else clean_pred_class
             cbt_guidance = CBTGuidance(
-                detected_distortion=distortion_pred.predicted_class,
+                detected_distortion=final_class,
                 template_id=None,
-                title=f"Cognitive Distortion: {distortion_pred.predicted_class}",
+                title=f"Cognitive Distortion: {final_class}",
                 explanation=None,
                 reframing_question=None,
                 balanced_thought_guidance=ai_message_content,
                 small_action=None
             )
-            distortion_output = distortion_pred
+            distortion_output = DistortionPrediction(
+                predicted_class=final_class,
+                confidence=distortion_pred.confidence,
+                all_probabilities=sanitized_probs
+            )
 
         # Step 6: Create MessageAnalysis
         entities_data = [e.model_dump() for e in entities]
@@ -334,6 +439,8 @@ def send_message_in_conversation(
                 "decision_priority": decision.priority.value,
                 "decision_reason": decision.reason,
                 "decision_version": decision.decision_version,
+                "therapy_stage": decision.therapy_stage,
+                "session_objective": decision.session_objective,
             },
             commit=False
         )
@@ -383,7 +490,9 @@ def send_message_in_conversation(
         reason=decision.reason,
         distortion_detected=decision.distortion_detected,
         safety_risk_level=decision.safety_risk_level,
-        decision_version=decision.decision_version
+        decision_version=decision.decision_version,
+        therapy_stage=decision.therapy_stage,
+        session_objective=decision.session_objective
     )
 
     return ConversationMessageResponse(
@@ -394,3 +503,74 @@ def send_message_in_conversation(
         decision=decision_detail,
         ai_response_log=AIResponseDetailResponse.model_validate(ai_response_log)
     )
+
+
+@router.get("/{conversation_id}/report", summary="Download professional CBT PDF session report")
+def download_conversation_report(
+    conversation_id: uuid.UUID,
+    user_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Generates and streams a professional, Beckian-compliant psychological session report in PDF format.
+    Ensures authorized patient data isolation.
+    """
+    conv_repo = ConversationRepository(db)
+    conversation = conv_repo.get_by_id(conversation_id)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+
+    if user_id:
+        try:
+            req_user_uuid = uuid.UUID(str(user_id))
+            if conversation.user_id != req_user_uuid:
+                raise HTTPException(status_code=403, detail="Unauthorized access to this session report.")
+        except ValueError:
+            pass
+
+    try:
+        pdf_buffer = pdf_report_service.generate_pdf_buffer(conversation, db)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate session PDF report: {str(e)}")
+
+    date_str = conversation.created_at.strftime("%Y%m%d")
+    filename = f"BetterMe_Session_Report_{date_str}_{str(conversation_id)[:8]}.pdf"
+
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
+    )
+
+
+@router.get("/{conversation_id}/report/summary", summary="Retrieve session report summary data in JSON format")
+def get_conversation_report_summary(
+    conversation_id: uuid.UUID,
+    user_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves the parsed psychological session synthesis data in JSON format for frontend rendering.
+    """
+    conv_repo = ConversationRepository(db)
+    conversation = conv_repo.get_by_id(conversation_id)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+
+    if user_id:
+        try:
+            req_user_uuid = uuid.UUID(str(user_id))
+            if conversation.user_id != req_user_uuid:
+                raise HTTPException(status_code=403, detail="Unauthorized access to this session report.")
+        except ValueError:
+            pass
+
+    try:
+        report_data = pdf_report_service.extract_session_data(conversation, db)
+        return report_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to extract session summary: {str(e)}")
+

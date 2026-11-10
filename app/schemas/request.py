@@ -20,6 +20,10 @@ class CreateConversationRequest(BaseModel):
     user_id: Optional[uuid.UUID] = Field(default=None, description="Optional UUID of existing user. If omitted, default demo user is assigned.")
 
 
+class UpdateConversationRequest(BaseModel):
+    title: str = Field(..., description="New title for the conversation", min_length=1, max_length=255)
+
+
 class CreateMessageRequest(BaseModel):
     text: str = Field(..., description="User text message to record and analyze", min_length=1)
 

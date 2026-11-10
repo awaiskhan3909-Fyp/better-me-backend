@@ -1,3 +1,13 @@
+import sys
+if sys.platform.startswith("win"):
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import time
 import os
 import logging
@@ -397,7 +407,46 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 logger.error(f"Local pipeline generation error: {e}")
                 raise e
 
-        # 3. Remote Hugging Face Inference API Execution (Only if local not loaded)
+        # 3. Remote Kaggle / Colab Cloudflare GPU Tunnel Execution
+        kaggle_url = os.getenv("KAGGLE_LLM_URL") or os.getenv("KAGGLE_API_URL") or os.getenv("REMOTE_LLM_URL")
+        if kaggle_url and kaggle_url.strip():
+            clean_url = kaggle_url.strip().rstrip("/")
+            if clean_url.endswith("/api"):
+                api_target = f"{clean_url}/llm/generate"
+            else:
+                api_target = f"{clean_url}/api/llm/generate"
+            try:
+                logger.info(f"Delegating LLM prompt to Kaggle GPU tunnel at {api_target}...")
+                print(f"⚡ [KAGGLE GPU] Forwarding prompt to Kaggle LLM: {api_target}")
+                resp = requests.post(
+                    api_target,
+                    json={
+                        "prompt": alpaca_prompt,
+                        "temperature": temperature,
+                        "max_tokens": max_tokens
+                    },
+                    timeout=(4, 35)
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    gen_text = data.get("generated_text") or data.get("content") or ""
+                    latency_ms = (time.time() - start_time) * 1000
+                    print(f"✅ [KAGGLE GPU] Inference returned in {latency_ms:.0f}ms!")
+                    return ProviderLLMResponse(
+                        raw_content=gen_text.strip(),
+                        prompt_tokens=len(alpaca_prompt.split()),
+                        completion_tokens=len(gen_text.split()),
+                        latency_ms=latency_ms,
+                        model_name="kaggle_gpu_llama3",
+                        provider_name="kaggle_cuda_tunnel"
+                    )
+                else:
+                    logger.warning(f"Kaggle tunnel response status {resp.status_code}: {resp.text}")
+            except Exception as kaggle_err:
+                logger.error(f"Kaggle tunnel delegation error: {kaggle_err}")
+                print(f"⚠️ [KAGGLE LLM WARNING] Remote GPU request failed: {kaggle_err}")
+
+        # 4. Remote Hugging Face Inference API Execution (Only if local not loaded)
         if self.hf_token and not self.repo_id.startswith("/"):
             api_url = f"https://api-inference.huggingface.co/models/{self.repo_id}"
             headers = {

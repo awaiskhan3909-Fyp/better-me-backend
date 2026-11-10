@@ -27,8 +27,9 @@ def run_command(cmd, desc=None):
 
 
 def check_gpu():
+    env_name = "KAGGLE" if os.path.exists("/kaggle") else ("GOOGLE COLAB" if os.path.exists("/content") else "LOCAL")
     print("━" * 80)
-    print("🔍 STEP 1/6: KAGGLE ACCELERATOR & GPU CHECK")
+    print(f"🔍 STEP 1/6: {env_name} ACCELERATOR & GPU CHECK")
     print("━" * 80)
     try:
         import torch
@@ -41,12 +42,65 @@ def check_gpu():
             print(f"✅ CUDA RUNTIME      : {torch.version.cuda}")
             return True
         else:
-            print("⚠️ WARNING: No GPU detected! Please enable GPU in Kaggle:")
-            print("👉 Right Sidebar -> Settings -> Accelerator -> Select 'GPU T4 x2' or 'GPU P100'!")
+            print(f"⚠️ WARNING: No GPU detected in {env_name}! Please enable GPU:")
+            if os.path.exists("/content"):
+                print("👉 In Google Colab: Runtime -> Change runtime type -> Hardware accelerator -> T4 GPU!")
+            else:
+                print("👉 In Kaggle: Right Sidebar -> Settings -> Accelerator -> GPU T4 x2 or GPU P100!")
             return False
     except ImportError:
         print("⚠️ PyTorch not yet imported.")
         return False
+
+
+def ensure_llm_endpoint():
+    """Ensures /api/llm/generate is always available for remote frontend / local backend delegation."""
+    llm_endpoint_path = Path("app/api/endpoints/llm.py")
+    if not llm_endpoint_path.exists():
+        llm_endpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        llm_endpoint_path.write_text('''from fastapi import APIRouter
+from pydantic import BaseModel
+from typing import Optional
+from app.services.llm_service import llm_service
+
+router = APIRouter(prefix="/llm", tags=["LLM Inference Engine"])
+
+class GenerateLLMRequest(BaseModel):
+    prompt: str
+    temperature: Optional[float] = 0.7
+    max_tokens: Optional[int] = 150
+
+class GenerateLLMResponse(BaseModel):
+    generated_text: str
+    model_name: str
+    provider_name: str
+    latency_ms: float
+
+@router.post("/generate", response_model=GenerateLLMResponse)
+async def generate_from_llm(req: GenerateLLMRequest):
+    provider = llm_service.provider
+    resp = provider.generate(
+        prompt=req.prompt,
+        temperature=req.temperature or 0.7,
+        max_tokens=req.max_tokens or 150
+    )
+    return GenerateLLMResponse(
+        generated_text=resp.raw_content,
+        model_name=resp.model_name,
+        provider_name=resp.provider_name,
+        latency_ms=resp.latency_ms
+    )
+''', encoding="utf-8")
+        print("✅ Auto-configured direct GPU LLM endpoint in app/api/endpoints/llm.py")
+
+    router_path = Path("app/api/router.py")
+    if router_path.exists():
+        content = router_path.read_text(encoding="utf-8")
+        if "llm" not in content:
+            content = content.replace("from app.api.endpoints import ", "from app.api.endpoints import llm, ")
+            content += '\napi_router.include_router(llm.router, tags=["LLM Inference Engine"])\n'
+            router_path.write_text(content, encoding="utf-8")
+            print("✅ Registered /api/llm router in app/api/router.py")
 
 
 def setup_kaggle_models():
@@ -67,6 +121,23 @@ def setup_kaggle_models():
     llama_path = models_base / "better_me_llama3_merged"
     safety_path = models_base / "bert_safety_classifier"
     dist_path = models_base / "bert_cognitive_distortions"
+
+    # Fast-path: Check Google Drive if mounted in Colab (/content/drive/MyDrive/)
+    drive_base = Path("/content/drive/MyDrive")
+    if (drive_base / "better_me_llama3_merged").exists() and len(list((drive_base / "better_me_llama3_merged").glob("*"))) > 0:
+        llama_path = drive_base / "better_me_llama3_merged"
+        print(f"📁 [DRIVE FOUND] Using LLaMA-3 CBT Model directly from Google Drive: '{llama_path}'")
+    elif (drive_base / "better_me_cbt_lora").exists() and len(list((drive_base / "better_me_cbt_lora").glob("*"))) > 0:
+        llama_path = drive_base / "better_me_cbt_lora"
+        print(f"📁 [DRIVE FOUND] Using LLaMA-3 CBT LoRA directly from Google Drive: '{llama_path}'")
+
+    if (drive_base / "bert_safety_classifier").exists() and len(list((drive_base / "bert_safety_classifier").glob("*"))) > 0:
+        safety_path = drive_base / "bert_safety_classifier"
+        print(f"📁 [DRIVE FOUND] Using BERT Safety Classifier directly from Google Drive: '{safety_path}'")
+
+    if (drive_base / "bert_cognitive_distortions").exists() and len(list((drive_base / "bert_cognitive_distortions").glob("*"))) > 0:
+        dist_path = drive_base / "bert_cognitive_distortions"
+        print(f"📁 [DRIVE FOUND] Using BERT Cognitive Distortions directly from Google Drive: '{dist_path}'")
 
     # 1. LLaMA-3 Merged CBT Model
     if not llama_path.exists() or len(list(llama_path.glob("*"))) == 0:
@@ -106,7 +177,7 @@ def setup_kaggle_models():
     except Exception:
         pass
 
-    print("✅ All 3 models ready in Kaggle working directory!")
+    print(f"✅ All 3 models ready for execution!")
 
 
 def preload_all_models():
@@ -240,6 +311,7 @@ if __name__ == "__main__":
         pass
 
     check_gpu()
+    ensure_llm_endpoint()
     setup_kaggle_models()
     preload_all_models()
     setup_cloudflared()

@@ -93,7 +93,8 @@ class SessionStateService:
         r"\b(?:that'?s\s+not\s+(?:what\s+i|true|right)|you\s+are\s+not\s+listening|you'?re\s+not\s+listening|you\s+don'?t\s+understand)\b",
         r"\b(?:stop\s+asking|stop\s+it|this\s+is\s+annoying|not\s+helpful|you\s+are\s+repeating|you'?re\s+repeating|broken\s+record)\b",
         r"\b(?:just\s+tell\s+me|why\s+so\s+many\s+questions|stop\s+interrogating|quit\s+asking)\b",
-        r"\b(?:galat\s+samjhe|aisa\s+nahi\s+hai|tum\s+sun\s+nahi\s+rahe|bar\s+bar\s+wahi|sawalat\s+band\s+karo)\b"
+        r"\b(?:wrong\s+(?:response|answer)|giving\s+(?:me\s+)?wrong|didn'?t\s+relate|not\s+relating|not\s+relevant|doesn'?t\s+relate|irrelevant\s+response)\b",
+        r"\b(?:galat\s+samjhe|galat\s+jawab|aisa\s+nahi\s+hai|tum\s+sun\s+nahi\s+rahe|bar\s+bar\s+wahi|sawalat\s+band\s+karo)\b"
     ]
 
     META_QUESTION_PATTERNS = [
@@ -125,7 +126,8 @@ class SessionStateService:
 
     SOLUTION_PATTERNS = [
         r"\b(?:tell\s+me\s+the\s+solution|what\s+should\s+i\s+do|how\s+to\s+solve|how\s+can\s+i\s+fix|give\s+me\s+a\s+solution)\b",
-        r"\b(?:hal\s+batao|kya\s+karun|kya\s+karein|solution\s+batao|kuch\s+mashwara)\b"
+        r"\b(?:give\s+me\s+(?:simple\s+)?solution|solution\s+of\s+(?:all\s+)?my\s+problems|suggest\s+me\s+therapy|suggest\s+therapy|give\s+me\s+advice|need\s+a\s+solution)\b",
+        r"\b(?:hal\s+batao|kya\s+karun|kya\s+karein|solution\s+batao|kuch\s+mashwara|koi\s+hal|mashwara\s+do)\b"
     ]
 
     DIRECT_QUESTION_PATTERNS = [

@@ -43,8 +43,8 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_SQLITE_PATH}")
 # Conversation Intelligence Configuration
 CONVERSATION_HISTORY_LIMIT = int(os.getenv("CONVERSATION_HISTORY_LIMIT", 10))
 
-# Conversational LLM Configuration (Open-Source HuggingFace / Local GPU)
-GEMINI_API_KEY = None  # Disabled as requested by user
+# Conversational LLM Configuration (Open-Source HuggingFace / Local GPU / Gemini API)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", None)
 LLM_MODEL_NAME = "awaiskhan4039/better-me-cbt-llama3-lora"
 LLM_FALLBACK_ENABLED = os.getenv("LLM_FALLBACK_ENABLED", "true").lower() == "true"
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "huggingface").lower()

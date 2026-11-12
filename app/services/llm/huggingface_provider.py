@@ -236,6 +236,16 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
             or any(clean_user_input.startswith(g) for g in ["hi ", "hello ", "hey ", "salam ", "assalam "])
         )
 
+        is_asking_solution = any(k in clean_user_input for k in [
+            "solution", "suggest", "therapy", "advice", "what should i do", "how to solve", "how can i fix",
+            "give me solution", "hal batao", "kya karun", "mashwara", "help me fix", "give me simple solution"
+        ])
+
+        is_negative_feedback = any(k in clean_user_input for k in [
+            "wrong response", "not relating", "wrong answer", "didn't relate", "not what i asked",
+            "you are not listening", "stop asking", "galat jawab", "samajh nahi aaya", "irrelevant"
+        ])
+
         target_distortion = distortion_name if distortion_name and distortion_name not in ["None", "Normal", "no distortion"] else None
 
         if is_greeting:
@@ -259,33 +269,75 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 f"### Input:\n{patient_input}\n\n"
                 f"### Response:\n"
             )
+        elif is_negative_feedback:
+            if is_roman_urdu:
+                instruction = (
+                    "You are Better Me, a humble and attentive clinical CBT companion. The patient feels your previous response was off-target or didn't relate to their problem. "
+                    "Acknowledge their frustration with genuine humility and zero defensiveness in natural Roman Urdu (2-3 sentences). "
+                    "Apologize directly for the disconnect, state that you are fully listening, and invite them to share what would be most helpful right now."
+                )
+            else:
+                instruction = (
+                    "You are Better Me, a humble and attentive clinical CBT companion. The patient feels your previous response was off-target, disconnected, or didn't answer their question. "
+                    "Acknowledge this with warmth, humility, and zero defensiveness in 2-3 sentences. "
+                    "Apologize directly for the disconnect, validate that their frustration makes complete sense, and invite them to tell you what they would like to focus on right now."
+                )
+            patient_input = user_text if user_text else prompt
+            alpaca_prompt = (
+                f"Below is an instruction that describes a clinical de-escalation and humble therapeutic feedback task. "
+                f"Write a warm, sincere therapist response acknowledging the disconnect without defensiveness.\n\n"
+                f"### Instruction:\n{instruction}\n\n"
+                f"### Input:\n{patient_input}\n\n"
+                f"### Response:\n"
+            )
+        elif is_asking_solution:
+            if is_roman_urdu:
+                instruction = (
+                    "You are Better Me, an empathetic and practical clinical CBT companion. The patient is asking for practical solutions and therapy guidance for their stress. "
+                    "Respond with deep empathy and clarity in natural Roman Urdu. "
+                    "Provide 2-3 clear, practical CBT coping steps (e.g., breaking workload into micro-tasks, easing perfectionism, 2-minute somatic breathing). "
+                    "Conclude with ONE supportive check-in question on which step feels most approachable."
+                )
+            else:
+                instruction = (
+                    "You are Better Me, an empathetic and practical clinical CBT companion. The patient is asking for concrete solutions, practical coping advice, and therapy guidance. "
+                    "Respond with compassion, structure, and clarity. "
+                    "Provide 2-3 structured, actionable CBT coping steps tailored to their situation (e.g., micro-chunking the workload, letting go of all-or-nothing perfectionism, breathing reset). "
+                    "Conclude with ONE supportive check-in question on which step feels most approachable."
+                )
+            patient_input = user_text if user_text else prompt
+            alpaca_prompt = (
+                f"Below is an instruction that describes a clinical CBT problem-solving and guidance task. "
+                f"Write a structured, compassionate therapist response that provides 2-3 practical CBT steps and ends with a supportive question.\n\n"
+                f"### Instruction:\n{instruction}\n\n"
+                f"### Input:\n{patient_input}\n\n"
+                f"### Response:\n"
+            )
         else:
             if is_roman_urdu:
                 if target_distortion:
                     instruction = (
                         f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion} and is speaking in Roman Urdu. "
                         f"Respond warmly and empathetically in natural, conversational Roman Urdu (Latin script Urdu). "
-                        f"Keep your response concise (under 3-4 sentences). Do NOT interrogate the patient with multiple questions. "
-                        f"Validate their distress, and conclude with exactly ONE gentle Socratic question to help them examine this thought."
+                        f"Validate their distress, offer a balanced alternative perspective, and conclude with exactly ONE gentle question to help them reflect."
                     )
                 else:
                     instruction = (
                         "You are Better Me, an empathetic clinical CBT companion. The patient is speaking in Roman Urdu. "
-                        "Respond with warmth, active listening, and calm emotional validation in conversational Roman Urdu (2-3 sentences). "
+                        "Respond with warmth, active listening, and calm emotional validation in conversational Roman Urdu. "
                         "Do NOT overwhelm with multiple questions. Ask only ONE supportive question at the end."
                     )
             else:
                 if target_distortion:
                     instruction = (
                         f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion}. "
-                        f"Validate their emotional distress with deep empathy in 2-3 sentences. "
-                        f"Do NOT bombard or interrogate the patient with multiple questions. "
-                        f"Conclude with exactly ONE focused, open-ended Socratic question to help them reflect on this thought."
+                        f"Validate their emotional distress with deep empathy and active listening. "
+                        f"Offer a balanced, constructive reframe, and conclude with exactly ONE focused, open-ended question to help them reflect on this thought."
                     )
                 else:
                     instruction = (
                         "You are Better Me, a clinical CBT companion. "
-                        "Provide compassionate validation and thoughtful active listening in 2-3 sentences. "
+                        "Provide compassionate validation and thoughtful active listening tailored specifically to what the patient shared. "
                         "Never ask multiple questions in one reply. Ask only ONE gentle, open-ended question at the end to explore how they are feeling."
                     )
 
@@ -300,8 +352,8 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
 
             alpaca_prompt = (
                 f"Below is an instruction that describes a clinical CBT therapeutic task, paired with an input containing the patient's distressed thought. "
-                f"Write a direct, compassionate therapist response that provides empathetic validation and ends with a single Socratic question. "
-                f"Keep it concise, supportive, and natural without repetitive questions, notes, or roleplay commentary.\n\n"
+                f"Write a direct, compassionate therapist response that provides empathetic validation and ends with a single reflective question. "
+                f"Keep it supportive, natural, and grounded in CBT without repetitive questions or robotic commentary.\n\n"
                 f"### Instruction:\n{instruction}\n\n"
                 f"### Input:\n{patient_input}\n\n"
                 f"### Response:\n"
@@ -319,7 +371,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                     pad_id = eos_id[0] if isinstance(eos_id, (list, tuple)) else eos_id
 
                 gen_kwargs = {
-                    "max_new_tokens": min(max_tokens, 150),
+                    "max_new_tokens": min(max_tokens, 350),
                     "max_length": None,
                     "use_cache": True,
                     "repetition_penalty": 1.18,
@@ -397,7 +449,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
             try:
                 outputs = self.local_pipeline(
                     alpaca_prompt,
-                    max_new_tokens=min(max_tokens, 150),
+                    max_new_tokens=min(max_tokens, 350),
                     temperature=temperature,
                     repetition_penalty=1.18,
                     do_sample=True,

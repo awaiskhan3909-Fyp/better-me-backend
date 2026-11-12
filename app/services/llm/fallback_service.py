@@ -336,7 +336,7 @@ class FallbackService:
 
         # 4. Constructive Action Intent in current text
         action_intent = None
-        if any(k in curr_low for k in ["talk with her", "talk to her", "talk with wife", "speak with her", "talk to him", "discuss", "ask her", "communicate"]):
+        if any(k in curr_low for k in ["talk with my wife", "talk with my husband", "talk with my girlfriend", "talk with my boyfriend", "speak with my partner"]):
             action_intent = "talk_directly"
         elif any(k in curr_low for k in ["write it down", "write down", "can write", "will write", "yes i can"]):
             action_intent = "write_down"
@@ -395,6 +395,42 @@ class FallbackService:
         act = narrative.get("action_intent")
         curr = narrative.get("curr_low")
 
+        # SCENARIO 0A: User Expresses Frustration / Disconnect / Wrong Response
+        if any(k in curr for k in ["wrong response", "not relating", "relate the solution", "wrong answer", "didn't relate", "not what i asked", "makes no sense", "galat jawab", "samajh nahi aaya"]):
+            if is_roman_urdu:
+                return (
+                    "Main dil se maazrat chahta hoon—aap bilkul theek keh rahe hain aur mera pichla jawab aapki baat se match nahi hua. "
+                    "Main ab poori tawajjuh se sun raha hoon. Aapne jo imtehanat, project deadline, aur routine ke bojh ka zikr kiya hai: "
+                    "kya aap chahenge ke hum mil kar aik seedha aur aasan 3-step plan banayein jo is waqt aapke is shadeed dabao ko kam kar sake?"
+                )
+            else:
+                return (
+                    "I sincerely apologize—you are completely right, and my previous response missed the mark and didn't directly relate to what you were saying. "
+                    "I am listening to you fully now. Regarding the overwhelming exam pressure and job project deadlines you are juggling: "
+                    "would it be helpful if we break this down into a few clear, practical steps right now so you don't have to carry this entire burden at once?"
+                )
+
+        # SCENARIO 0B: User Asks for Direct Solutions / Therapy Recommendations
+        if any(k in curr for k in ["give me simple solution", "simple solution", "suggest me therapy", "suggest therapy", "solution of all my problems", "give me solution", "how to solve", "give me the solution", "hal batao", "solution batao", "kya karun"]):
+            if is_roman_urdu:
+                return (
+                    "Jab imtehan aur job ke deadlines aik sath sar par aa jayein, toh zehan confuse aur bojh talay dab jata hai—yeh depression aur anxiety ka bohot aam radde-amal hai. "
+                    "CBT ke mutabiq iska seedha aur amli hal yeh 3 qadam hain:\n"
+                    "1. Task Fragmentation (Aik Waqt Mein Aik Kaam): Sab cheezon ko aik sath sochna band karein. Aglay 45 minute ke liye sirf aik specific topic ya task chun lein.\n"
+                    "2. Perfectionism Standard Kam Karein: Imtehan aur job dono mein 100% perfection ki zid chhor kar 'Good Enough' completion par focus karein.\n"
+                    "3. 2-Minute Somatic Reset: Jab ghussa ya confusion barhay, 2 minute ke liye aahista lambi saans lein taake dimagh ka stress mode off ho sake.\n\n"
+                    "In 3 qadamon mein se sab se pehla konsa hai jo aap abhi aasan tareeqay se shuru kar sakte hain?"
+                )
+            else:
+                return (
+                    "When heavy exam workload and workplace deadlines collide, your cognitive load spikes—which naturally triggers brain fog, confusion, and feelings of depression. "
+                    "Here is a structured, practical CBT recovery framework to immediately regain control:\n"
+                    "1. Micro-Chunking (Single-Tasking): Do not attempt to solve the whole semester or project today. Select just ONE bite-sized deliverable for the next 45 minutes.\n"
+                    "2. Lower the Perfection Threshold: Under crisis pressure, give yourself permission to produce 'good enough' work rather than flawless 100% perfection.\n"
+                    "3. Nervous System Reset: When panic or anger surfaces, pause for 2 minutes of slow 4-7-8 diaphragmatic breathing to bring your prefrontal cortex back online.\n\n"
+                    "Which of these three concrete steps feels most manageable for you to start with today?"
+                )
+
         # SCENARIO 1: User agrees to write it down or take action (Wrap up & Session Takeaway)
         if act == "write_down" or (stage in ["closure", "action_plan"] and any(w in curr for w in ["yes", "i can", "will do", "okay", "haan"])):
             if is_roman_urdu:
@@ -424,9 +460,9 @@ class FallbackService:
                 )
             else:
                 return (
-                    f"Deciding to talk with {p if p != 'them' else 'her'} directly and calmly is a wonderful, constructive step forward. "
+                    f"Deciding to communicate directly and calmly with {p if p != 'them' else 'the other person'} is a wonderful, constructive step forward. "
                     "Having an open conversation gives you real clarity instead of letting anxious assumptions invent painful stories in your head. "
-                    f"When you talk with {p if p != 'them' else 'her'}, what would feel like a calm and honest way to share what you've been feeling?"
+                    f"When you speak with {p if p != 'them' else 'them'}, what would feel like a calm and honest way to share what you've been feeling?"
                 )
 
         # SCENARIO 2.5: User expresses hope or wishing for a chance
@@ -481,8 +517,8 @@ class FallbackService:
                 )
             else:
                 return (
-                    f"Waiting a whole day for a reply from {p if p != 'them' else 'her'} can leave you sitting in really heavy, unsettling silence. "
-                    f"When {p if p != 'them' else 'she'} took that long to text back, what specific worries and automatic thoughts started running through your mind while you waited?"
+                    f"Waiting a long time for a response from {p if p != 'them' else 'someone'} can leave you sitting in really heavy, unsettling silence. "
+                    f"When {p if p != 'them' else 'they'} took that long to reply, what specific worries and automatic thoughts started running through your mind while you waited?"
                 )
 
         # SCENARIO 6: User expresses feeling ignored

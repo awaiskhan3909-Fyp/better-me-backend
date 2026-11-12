@@ -143,6 +143,15 @@ class SessionStateService:
         r"\b(?:pata\s+nahi|kuch\s+samajh\s+nahi\s+aa\s+raha|shayad|mujhe\s+maloom\s+nahi|kuch\s+nahi\s+kehsakta)\b"
     ]
 
+    ACTION_ACCEPTANCE_PATTERNS = [
+        r"\b(?:yes\s+i\s+can|i\s+can\s+do\s+that|i\s+will\s+try|i\s+can\s+write|i\s+will\s+write|i\s+should\s+talk|i\s+will\s+talk|i'?ll\s+talk|sure\s+i\s+can|sounds\s+good|i\s+will\s+do|theek\s+hai|haan\s+main|kar\s+sakta\s+hoon|baat\s+karunga|koshish\s+karunga)\b",
+        r"\b(?:i\s+should\s+talk|i\s+can\s+talk|i\s+will\s+ask|i\s+can\s+ask|talk\s+with\s+her|talk\s+to\s+her|talk\s+to\s+him|call\s+her|talk\s+with\s+wife)\b"
+    ]
+
+    EVIDENCE_PATTERNS = [
+        r"\b(?:because|evidence|she\s+replied|she\s+said|he\s+said|it\s+happened|fact|actually|maazi\s+mein|pehle\s+bhi|saboot)\b"
+    ]
+
     def classify_user_intent(self, text: str) -> UserIntent:
         text_lower = text.lower().strip()
         words = set(re.findall(r"\b[a-zA-Z']+\b", text_lower))
@@ -198,7 +207,15 @@ class SessionStateService:
            (len(words) <= 4 and any(w in words for w in ["hi", "hello", "hey", "salam"])):
             return UserIntent.GREETING
 
-        # 13. Thought Sharing
+        # 13. Action Acceptance & Constructive Planning
+        if any(bool(re.search(pat, text_lower)) for pat in self.ACTION_ACCEPTANCE_PATTERNS):
+            return UserIntent.ACTION_ACCEPTANCE
+
+        # 13.5. Evidence Sharing
+        if any(bool(re.search(pat, text_lower)) for pat in self.EVIDENCE_PATTERNS):
+            return UserIntent.EVIDENCE_SHARING
+
+        # 14. Thought Sharing
         if re.search(r"\b(?:i\s+think|i\s+feel\s+like|in\s+my\s+mind|my\s+thought\s+is|mujhe\s+lagta\s+hai|i\s+am\s+convinced)\b", text_lower):
             return UserIntent.THOUGHT_SHARING
 

@@ -4,11 +4,12 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.db.models import User, Conversation, Message, MessageAnalysis, UserIntakeAssessment
+from app.db.models import User, Conversation, Message, MessageAnalysis, UserIntakeAssessment, CBTExerciseSubmission
 from app.schemas.auth import (
     DashboardStatsResponse,
     SessionSummaryItem,
-    EmotionalTrendItem
+    EmotionalTrendItem,
+    TherapyOverviewData
 )
 
 
@@ -112,15 +113,69 @@ class AnalyticsRepository:
         avg_duration = round(sum(s.duration for s in recent_sessions) / len(recent_sessions)) if recent_sessions else 0
         current_risk = conversations[0].current_risk_level if conversations else "Safe"
 
+        # Count total thoughts analyzed
+        thoughts_analyzed = (
+            self.db.query(MessageAnalysis)
+            .filter(MessageAnalysis.conversation_id.in_(conv_ids))
+            .count()
+        ) if conv_ids else 0
+
+        # Unique cognitive distortion categories practiced in CBT Practice Center
+        practiced_rows = (
+            self.db.query(CBTExerciseSubmission.distortion_category)
+            .filter(CBTExerciseSubmission.user_id == user_id, CBTExerciseSubmission.is_completed == True)
+            .distinct()
+            .all()
+        )
+        categories_practiced = len(practiced_rows)
+
+        # Overview: recent distortions, latest session date, latest reflection, recommended next step
+        latest_session_date = conversations[0].created_at.strftime("%b %d, %Y") if conversations else None
+        recent_distortions: List[str] = []
+        if recent_sessions and recent_sessions[0].distortions_detected:
+            recent_distortions = recent_sessions[0].distortions_detected
+        elif any(v > 0 for v in distortions_breakdown.values()):
+            recent_distortions = [k for k, v in distortions_breakdown.items() if v > 0][:3]
+
+        latest_reflection = None
+        if conversations:
+            last_user_msg = (
+                self.db.query(Message)
+                .filter(Message.conversation_id == conversations[0].id, Message.sender_type == "user")
+                .order_by(Message.sequence_number.desc())
+                .first()
+            )
+            if last_user_msg and last_user_msg.content:
+                cleaned = last_user_msg.content.strip()
+                latest_reflection = (cleaned[:140] + "...") if len(cleaned) > 140 else cleaned
+
+        # Helpful next step recommendation
+        if recent_distortions:
+            next_step = f"Consider challenging '{recent_distortions[0]}' patterns using guided exercises in the CBT Practice Center."
+        elif categories_practiced < 6:
+            next_step = "Explore the CBT Practice Center to practice identifying automatic negative thoughts."
+        else:
+            next_step = "Take a short mindful pause or check in with a new therapy dialogue to maintain balanced perspective."
+
+        overview = TherapyOverviewData(
+            recent_distortions=recent_distortions,
+            latest_session_date=latest_session_date,
+            latest_reflection=latest_reflection,
+            recommended_next_step=next_step
+        )
+
         return DashboardStatsResponse(
             user_name=user_name,
             total_sessions=total_sessions,
             avg_duration_minutes=avg_duration,
             total_messages=total_messages,
+            thoughts_analyzed=thoughts_analyzed,
+            categories_practiced=categories_practiced,
             current_risk_level=current_risk,
             primary_focus=primary_focus,
             primary_goal=primary_goal,
             distortions_breakdown=distortions_breakdown,
             recent_sessions=recent_sessions,
-            emotional_trends=emotional_trends
+            emotional_trends=emotional_trends,
+            therapy_overview=overview
         )

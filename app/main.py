@@ -20,10 +20,11 @@ async def lifespan(app: FastAPI):
     distortion_service.load_model()
     safety_service.load_model()
     
-    # Preload Fine-Tuned LLaMA-3 CBT LoRA model into GPU memory
+    # Preload Fine-Tuned LLaMA-3 CBT LoRA model into GPU memory if CUDA is available
     try:
+        import torch
         from app.services.llm_service import llm_service
-        if hasattr(llm_service.provider, "_init_local_pipeline"):
+        if torch.cuda.is_available() and hasattr(llm_service.provider, "_init_local_pipeline"):
             if getattr(llm_service.provider, "unsloth_model", None) is None and llm_service.provider.local_pipeline is None:
                 print("[INFO] Initializing Fine-Tuned LLaMA-3 CBT LoRA on GPU...")
                 llm_service.provider._init_local_pipeline()

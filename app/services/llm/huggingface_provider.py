@@ -181,6 +181,17 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
 
 
     def is_available(self) -> bool:
+        # 1. Active Kaggle / Colab GPU Cloudflare Tunnel (with fast health check)
+        kaggle_url = os.getenv("KAGGLE_LLM_URL") or os.getenv("KAGGLE_API_URL") or os.getenv("REMOTE_LLM_URL")
+        if kaggle_url and kaggle_url.strip():
+            try:
+                base_check = kaggle_url.strip().rstrip("/")
+                resp = requests.get(f"{base_check}/health", timeout=1.2)
+                if resp.status_code == 200:
+                    return True
+            except Exception:
+                pass
+
         if getattr(self, "unsloth_model", None) is not None or self.local_pipeline is not None:
             return True
 
@@ -192,7 +203,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                 "/content/drive/MyDrive/better_me_cbt_lora",
                 "/content/drive/MyDrive/llama3_merged"
             ])
-            if torch.cuda.is_available() or drive_exists or self.use_local_pipeline:
+            if (torch.cuda.is_available() or drive_exists):
                 print("[INFO] Attempting lazy initialization of LLaMA-3 on GPU...")
                 self._init_local_pipeline()
                 if getattr(self, "unsloth_model", None) is not None or self.local_pipeline is not None:
@@ -411,13 +422,53 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
         kaggle_url = os.getenv("KAGGLE_LLM_URL") or os.getenv("KAGGLE_API_URL") or os.getenv("REMOTE_LLM_URL")
         if kaggle_url and kaggle_url.strip():
             clean_url = kaggle_url.strip().rstrip("/")
-            if clean_url.endswith("/api"):
-                api_target = f"{clean_url}/llm/generate"
-            else:
-                api_target = f"{clean_url}/api/llm/generate"
+            bridge_base = clean_url if clean_url.endswith("/api") else f"{clean_url}/api"
+            target_text = user_text or prompt
+
+            # 3a. High-Fidelity Remote GPU Conversational LLaMA-3 Bridge
             try:
-                logger.info(f"Delegating LLM prompt to Kaggle GPU tunnel at {api_target}...")
-                print(f"⚡ [KAGGLE GPU] Forwarding prompt to Kaggle LLM: {api_target}")
+                logger.info(f"Delegating LLM prompt to Kaggle GPU tunnel at {bridge_base}...")
+                print(f"⚡ [KAGGLE GPU] Forwarding dialogue to Kaggle LLaMA-3 GPU: '{target_text[:60]}...'")
+
+                bridge_id = getattr(self, "_kaggle_bridge_id", None)
+                if not bridge_id:
+                    conv_init = requests.post(
+                        f"{bridge_base}/conversations",
+                        json={"title": "GPU Clinical Bridge"},
+                        timeout=(4, 12)
+                    )
+                    if conv_init.status_code in (200, 201):
+                        self._kaggle_bridge_id = conv_init.json().get("id")
+                        bridge_id = self._kaggle_bridge_id
+                        print(f"🔗 [KAGGLE GPU] Created active bridge session: {bridge_id}")
+
+                if bridge_id:
+                    msg_resp = requests.post(
+                        f"{bridge_base}/conversations/{bridge_id}/messages",
+                        json={"text": target_text},
+                        timeout=(4, 45)
+                    )
+                    if msg_resp.status_code in (200, 201):
+                        mdata = msg_resp.json()
+                        gen_text = mdata.get("ai_message", {}).get("content") or ""
+                        if gen_text and len(gen_text.strip().split()) >= 4:
+                            latency_ms = (time.time() - start_time) * 1000
+                            print(f"✅ [KAGGLE GPU] Dynamic LLaMA-3 Inference returned in {latency_ms:.0f}ms!")
+                            return ProviderLLMResponse(
+                                raw_content=gen_text.strip(),
+                                prompt_tokens=len(target_text.split()),
+                                completion_tokens=len(gen_text.split()),
+                                latency_ms=latency_ms,
+                                model_name="kaggle_gpu_llama3",
+                                provider_name="kaggle_cuda_tunnel"
+                            )
+            except Exception as bridge_err:
+                logger.warning(f"Kaggle GPU conversation bridge attempt failed: {bridge_err}")
+                print(f"⚠️ [KAGGLE GPU NOTICE] Bridge call failed: {bridge_err}. Trying direct endpoint...")
+
+            # 3b. Fallback to direct /api/llm/generate if present
+            try:
+                api_target = f"{bridge_base}/llm/generate"
                 resp = requests.post(
                     api_target,
                     json={
@@ -425,26 +476,23 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                         "temperature": temperature,
                         "max_tokens": max_tokens
                     },
-                    timeout=(4, 35)
+                    timeout=(3, 30)
                 )
                 if resp.status_code == 200:
                     data = resp.json()
                     gen_text = data.get("generated_text") or data.get("content") or ""
-                    latency_ms = (time.time() - start_time) * 1000
-                    print(f"✅ [KAGGLE GPU] Inference returned in {latency_ms:.0f}ms!")
-                    return ProviderLLMResponse(
-                        raw_content=gen_text.strip(),
-                        prompt_tokens=len(alpaca_prompt.split()),
-                        completion_tokens=len(gen_text.split()),
-                        latency_ms=latency_ms,
-                        model_name="kaggle_gpu_llama3",
-                        provider_name="kaggle_cuda_tunnel"
-                    )
-                else:
-                    logger.warning(f"Kaggle tunnel response status {resp.status_code}: {resp.text}")
-            except Exception as kaggle_err:
-                logger.error(f"Kaggle tunnel delegation error: {kaggle_err}")
-                print(f"⚠️ [KAGGLE LLM WARNING] Remote GPU request failed: {kaggle_err}")
+                    if gen_text:
+                        latency_ms = (time.time() - start_time) * 1000
+                        return ProviderLLMResponse(
+                            raw_content=gen_text.strip(),
+                            prompt_tokens=len(alpaca_prompt.split()),
+                            completion_tokens=len(gen_text.split()),
+                            latency_ms=latency_ms,
+                            model_name="kaggle_gpu_llama3",
+                            provider_name="kaggle_cuda_tunnel"
+                        )
+            except Exception:
+                pass
 
         # 4. Remote Hugging Face Inference API Execution (Only if local not loaded)
         if self.hf_token and not self.repo_id.startswith("/"):

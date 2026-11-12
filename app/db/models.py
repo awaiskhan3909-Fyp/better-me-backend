@@ -31,6 +31,8 @@ class User(Base):
     clinical_profile: Mapped[Optional["PatientClinicalProfile"]] = relationship("PatientClinicalProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     episodic_memories: Mapped[List["EpisodicTherapyMemory"]] = relationship("EpisodicTherapyMemory", back_populates="user", cascade="all, delete-orphan")
     thought_records: Mapped[List["CBTThoughtRecord"]] = relationship("CBTThoughtRecord", back_populates="user", cascade="all, delete-orphan")
+    exercise_submissions: Mapped[List["CBTExerciseSubmission"]] = relationship("CBTExerciseSubmission", back_populates="user", cascade="all, delete-orphan")
+    stress_relief_activities: Mapped[List["StressReliefActivity"]] = relationship("StressReliefActivity", back_populates="user", cascade="all, delete-orphan")
 
 
 class Conversation(Base):
@@ -243,4 +245,46 @@ class ConversationSessionState(Base):
 
     # Relationships
     conversation: Mapped["Conversation"] = relationship("Conversation", back_populates="session_state")
+
+
+class CBTExerciseSubmission(Base):
+    __tablename__ = "cbt_exercise_submissions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    distortion_category: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    exercise_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    exercise_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    scenario: Mapped[str] = mapped_column(Text, nullable=False)
+    answers: Mapped[dict] = mapped_column(JSON_TYPE, default=dict, nullable=False)
+    is_completed: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "exercise_id", name="uq_user_exercise_submission"),
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="exercise_submissions")
+
+
+class StressReliefActivity(Base):
+    __tablename__ = "stress_relief_activities"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    activity_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    activity_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)  # breathing, grounding, pmr, mindful_pause
+    duration_seconds: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_completed: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="stress_relief_activities")
+
+
 

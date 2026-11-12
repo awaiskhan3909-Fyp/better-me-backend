@@ -7,12 +7,14 @@ from app.services.distortion_service import CANONICAL_DISTORTIONS
 
 class FallbackService:
     """
-    Advanced Clinical CBT Multi-Stage Failover Engine (Beckian Protocol & 5-Part Model):
-    - Strictly adheres to Single Question Rule.
+    Advanced Clinical CBT Multi-Stage Conversational Intelligence Engine (Beckian Protocol & 5-Part Model):
+    - Real-time Contextual Mirroring: Actively extracts user entities (wife, boss, exam, etc.), situations, and emotions.
+    - Eliminates robotic script repetition by synthesizing dynamic, empathetic reflections.
+    - Strictly adheres to Single Question Rule (at most one question mark per response).
     - Context-aware question deduplication: filters out questions already asked.
-    - Handles confusion, frustration, off-topic replies, and direct questions gracefully.
+    - Handles confusion, frustration, off-topic replies, direct questions, and exit requests gracefully.
     - Multi-stage depth: Situation -> Somatic/Emotion -> Automatic Thoughts -> Distortion -> Restructuring -> Action -> Structured Closure.
-    - Bilingual (English & conversational Roman Urdu).
+    - Full bilingual support (English & conversational Roman Urdu).
     - NEVER leaks raw 'LABEL_' strings into outputs.
     """
 
@@ -73,12 +75,12 @@ class FallbackService:
 
     STAGE_POOLS_ENG = {
         "check_in": [
-            "Hello! I am Better Me, your supportive CBT AI companion. How are you feeling right now, and what is on your mind today?",
-            "Welcome! I am here to support you in a calm, non-judgmental space. How has your emotional state been feeling today?",
-            "Hi there. I'm glad you're here. What would feel most important for us to unpack together today?"
+            "Hi there! I'm really glad you reached out today. How are you feeling right now, and what's on your mind?",
+            "Welcome! I am here to support you in a calm, non-judgmental space. How has your day been treating you?",
+            "Hello! What would feel most important or helpful for us to unpack together today?"
         ],
         "exploration": [
-            "I hear you. To help us understand the full context, what specific situation or event triggered this feeling recently?",
+            "I hear you clearly. To help us understand the full context, what specific situation or event triggered this feeling recently?",
             "Thank you for sharing that with me. Could you walk me through what was happening right around the time this started feeling heavy?",
             "It makes complete sense that this is weighing on you. Who was involved, and what specifically took place when this occurred?",
             "Understanding the concrete details helps a lot. When this happened, where were you and what set it off?"
@@ -152,7 +154,7 @@ class FallbackService:
 
     STAGE_POOLS_URDU = {
         "check_in": [
-            "Salam! Main Better Me AI hoon, aapka supportive clinical companion. Aap is waqt kaisa mehsoos kar rahe hain, aur aaj kis baare mein baat karna chahenge?",
+            "Salam! Main Better Me AI hoon. Main bohot khush hoon ke aapne rabta kiya. Aaj aap kaisa mehsoos kar rahe hain, aur kis baare mein baat karna chahenge?",
             "Khush-amdeed! Main yahan aapke sath ek pursukoon mahol mein baat karne ke liye maujood hoon. Aaj aapka din kaisa guzar raha hai?",
             "Salam! Aaj aapke zehan par kaun si aisi baat hai jis par hum baat kar sakte hain?"
         ],
@@ -221,6 +223,138 @@ class FallbackService:
         ]
     }
 
+    def _extract_narrative(self, user_text: str, conversation_context: Optional[Any] = None) -> Dict[str, Any]:
+        """
+        Extracts narrative entities, situation triggers, emotional states, and action intent
+        from current text and conversational history.
+        """
+        all_texts: List[str] = []
+        if conversation_context and hasattr(conversation_context, "recent_messages"):
+            for m in conversation_context.recent_messages:
+                if hasattr(m, "content"):
+                    all_texts.append(m.content)
+        all_texts.append(user_text)
+        combined = " ".join(all_texts).lower()
+        curr_low = user_text.lower().strip()
+
+        # 1. Person / Relationship Entity & Pronouns
+        person = None
+        subj = "they"
+        obj = "them"
+        poss = "their"
+
+        if any(k in combined for k in ["wife", "biwi", "begum"]):
+            person = "your wife"
+            subj = "she"
+            obj = "her"
+            poss = "her"
+        elif any(k in combined for k in ["husband", "shohar"]):
+            person = "your husband"
+            subj = "he"
+            obj = "him"
+            poss = "his"
+        elif any(k in combined for k in ["girlfriend", "gf"]):
+            person = "your girlfriend"
+            subj = "she"
+            obj = "her"
+            poss = "her"
+        elif any(k in combined for k in ["boyfriend", "bf"]):
+            person = "your boyfriend"
+            subj = "he"
+            obj = "him"
+            poss = "his"
+        elif any(k in combined for k in ["partner", "spouse"]):
+            person = "your partner"
+            subj = "they"
+            obj = "them"
+            poss = "their"
+        elif any(k in combined for k in ["boss", "manager", "supervisor"]):
+            person = "your manager"
+            subj = "they"
+            obj = "them"
+            poss = "their"
+        elif any(k in combined for k in ["colleague", "coworker"]):
+            person = "your colleague"
+            subj = "they"
+            obj = "them"
+            poss = "their"
+        elif any(k in combined for k in ["friend", "dost"]):
+            person = "your friend"
+            subj = "they"
+            obj = "them"
+            poss = "their"
+        elif any(k in combined for k in ["teammate", "group member"]):
+            person = "your teammate"
+            subj = "they"
+            obj = "them"
+            poss = "their"
+        elif any(k in combined for k in ["parents", "father", "mother", "abbu", "ammi"]):
+            person = "your family"
+            subj = "they"
+            obj = "them"
+            poss = "their"
+        elif any(k in combined for k in ["colleague", "coworker"]):
+            person = "your colleague"
+            person_possessive = "them"
+        elif any(k in combined for k in ["friend", "dost"]):
+            person = "your friend"
+            person_possessive = "them"
+        elif any(k in combined for k in ["teammate", "group member"]):
+            person = "your teammate"
+            person_possessive = "them"
+        elif any(k in combined for k in ["parents", "father", "mother", "abbu", "ammi"]):
+            person = "your family"
+            person_possessive = "them"
+
+        # 2. Trigger Situation
+        situation = None
+        if any(k in combined for k in ["1 day", "one day", "reply", "replied", "late reply", "hours", "message", "text"]):
+            situation = "text_delay"
+        elif any(k in combined for k in ["exam", "test", "quiz", "marks", "grade", "fail", "finals", "paper", "degree", "course"]):
+            situation = "academic"
+        elif any(k in combined for k in ["work", "meeting", "presentation", "job", "career", "interview", "office"]):
+            situation = "workplace"
+        elif any(k in combined for k in ["chest", "heart", "breath", "panic", "sleep", "insomnia", "shaking", "tired"]):
+            situation = "somatic"
+
+        # 3. Emotion / Thought state in current text
+        emotion_state = None
+        if any(k in curr_low for k in ["ignored", "nazarandaz"]):
+            emotion_state = "ignored"
+        elif any(k in curr_low for k in ["disappointed", "dissoppinted", "mayoos"]):
+            emotion_state = "disappointed"
+        elif any(k in curr_low for k in ["don't love", "dont love", "she doesn't love", "does not love"]):
+            emotion_state = "unloved"
+        elif any(k in curr_low for k in ["losing interest", "lost interest", "not interested", "interest nahi"]):
+            emotion_state = "losing_interest"
+        elif any(k in curr_low for k in ["not capable", "incapable", "worthless", "qabil nahi"]):
+            emotion_state = "not_capable"
+        elif any(k in curr_low for k in ["anxious", "scared", "fear", "dar", "ghabrahat"]):
+            emotion_state = "anxious"
+        elif any(k in curr_low for k in ["hope", "hoping", "chance", "still hoping"]):
+            emotion_state = "hoping"
+
+        # 4. Constructive Action Intent in current text
+        action_intent = None
+        if any(k in curr_low for k in ["talk with her", "talk to her", "talk with wife", "speak with her", "talk to him", "discuss", "ask her", "communicate"]):
+            action_intent = "talk_directly"
+        elif any(k in curr_low for k in ["write it down", "write down", "can write", "will write", "yes i can"]):
+            action_intent = "write_down"
+        elif any(k in curr_low for k in ["study", "prepare", "parhna"]):
+            action_intent = "study"
+
+        return {
+            "person": person,
+            "subj": subj,
+            "obj": obj,
+            "poss": poss,
+            "situation": situation,
+            "emotion_state": emotion_state,
+            "action_intent": action_intent,
+            "curr_low": curr_low,
+            "has_history": len(all_texts) > 1
+        }
+
     def _select_non_duplicate(self, candidate_list: List[str], asked_questions: List[str]) -> str:
         """Selects a candidate that has not already been asked."""
         if not candidate_list:
@@ -238,6 +372,159 @@ class FallbackService:
         if unasked:
             return random.choice(unasked)
         return random.choice(candidate_list)
+
+    def _synthesize_contextual_response(
+        self,
+        narrative: Dict[str, Any],
+        user_text: str,
+        stage: str,
+        detected_distortion: Optional[str],
+        asked_q: List[str],
+        is_roman_urdu: bool
+    ) -> Optional[str]:
+        """
+        Synthesizes an interactive, empathetic, context-aware CBT reflection.
+        Directly converses about the user's specific scenario, people, and feelings.
+        """
+        p = narrative.get("person") or "them"
+        subj = narrative.get("subj") or "they"
+        obj = narrative.get("obj") or "them"
+        poss = narrative.get("poss") or "their"
+        sit = narrative.get("situation")
+        emo = narrative.get("emotion_state")
+        act = narrative.get("action_intent")
+        curr = narrative.get("curr_low")
+
+        # SCENARIO 1: User agrees to write it down or take action (Wrap up & Session Takeaway)
+        if act == "write_down" or (stage in ["closure", "action_plan"] and any(w in curr for w in ["yes", "i can", "will do", "okay", "haan"])):
+            if is_roman_urdu:
+                return (
+                    "--- Session Ka Khulasa Aur Homework ---\n"
+                    f"• Aham Nateeja: Aaj humne dekha ke {p if p != 'them' else 'doosron'} ki khamoshi ya late reply ki wajah se zehan foran 'Mind Reading' aur khud par shak karne lagta hai. Lekin ghaur karne par aapne samjha ke late reply ka matlab pyar ya qabiliyat ka khatam hona nahi hota, aur pursukoon andaz mein baat karna sab se behtar rasta hai.\n"
+                    f"• Homework: {p if p != 'them' else 'un'} se baghair kisi ilzam ke khul kar baat karein, aur aainda aisi khamoshi aane par foran bura nateeja nikalne se parhaiz karein.\n"
+                    "• Agla Maqsad: Aglay session mein dekhenge ke un se baat kar ke aapko kitna sukoon mila aur aage kaise mutawazan soch ko barqarar rakhein.\n\n"
+                    "Aapne aaj bohot behtareen aur himmat wali soch ka muzahira kiya! Aap apna verified session report neechay download kar sakte hain."
+                )
+            else:
+                return (
+                    "--- Session Summary & Takeaway ---\n"
+                    f"• Core Reflection: You noticed how an unexpected delay from {p if p != 'them' else 'a loved one'} triggered intense mind-reading and self-doubt ('she is losing interest / I am not capable'). By unpacking the evidence, you recognized that a delayed reply is not proof of lost affection, and that direct, calm communication is far healthier than assuming the worst.\n"
+                    f"• Personalized Homework: Have a gentle, honest conversation with {p if p != 'them' else 'them'} to share how you felt, and practice pausing to check realistic everyday explanations before jumping to painful conclusions.\n"
+                    f"• Next Session Goal: Check in on how that conversation went and continue strengthening your emotional confidence in relationships.\n\n"
+                    "You did meaningful, courageous reflection today! Your clinical session report is ready to download below whenever you wish."
+                )
+
+        # SCENARIO 2: User decides to talk directly / communicate
+        if act == "talk_directly":
+            if is_roman_urdu:
+                return (
+                    f"{p if p != 'them' else 'Un'} se aamne saamne aur pursukoon andaz mein baat karne ka faisla bohot mutawazan aur samajhdari wala qadam hai. "
+                    "Khamoshi mein bura sochne se behtar hota hai ke aamne saamne seedhi baat kar ke haqeeqat jaan li jaye. "
+                    f"Jab aap {p if p != 'them' else 'un'} se baat karenge, to kis tarah shuru karna chahenge taake wo aapke jazbaat ko achi tarah samajh sakein?"
+                )
+            else:
+                return (
+                    f"Deciding to talk with {p if p != 'them' else 'her'} directly and calmly is a wonderful, constructive step forward. "
+                    "Having an open conversation gives you real clarity instead of letting anxious assumptions invent painful stories in your head. "
+                    f"When you talk with {p if p != 'them' else 'her'}, what would feel like a calm and honest way to share what you've been feeling?"
+                )
+
+        # SCENARIO 2.5: User expresses hope or wishing for a chance
+        if emo == "hoping" or any(k in curr for k in ["hoping", "hope", "chance she loves", "chance that she"]):
+            if is_roman_urdu:
+                return (
+                    f"Yeh umeed batati hai ke aap {p if p != 'them' else 'unse'} kitna pyar karte hain aur is rishte ki kitni qadr karte hain. "
+                    "Is umeed ko samne rakhte hue, kaun sa aisa mutawazan qadam hai jo khamoshi mein pareshan hone ke bajaye haqeeqat ko samne la sake?"
+                )
+            else:
+                return (
+                    f"Holding onto that hope shows how deeply you truly care about {p if p != 'them' else obj} and your relationship. "
+                    "With that care in mind, what is one constructive step that could help you find out what is really happening, rather than carrying the weight of painful worries alone?"
+                )
+
+        # SCENARIO 3: User expresses self-blame / feeling not capable / losing interest
+        if emo in ["not_capable", "losing_interest"] or any(k in curr for k in ["not capable", "losing interest", "interested in me"]):
+            if is_roman_urdu:
+                return (
+                    f"Yeh soch dil aur dimagh par bohot shadeed bojh dalti hai—ke aap {p if p != 'them' else 'unke'} qabil nahi hain ya wo interest kho rahi hain. "
+                    "Ghaur karein ke kaise aik late message ki wajah se aapke zehan ne foran 'Mind Reading' shuru kar di aur aapki zaati qabiliyat par sawal utha diya. "
+                    f"Kya {p if p != 'them' else 'unhon'} ne waqie kabhi aisa kaha hai, ya phir yeh sirf pareshani ka khauf hai jo aapko aisa mehsus karwa raha hai?"
+                )
+            else:
+                return (
+                    f"Carrying that thought—that you might not be capable enough for {p if p != 'them' else obj} or that {subj} is losing interest—puts an overwhelming weight on your heart. "
+                    f"Notice how quickly our minds jump into mind reading: treating a delayed text message as proof that {poss} feelings have changed or that you are falling short. "
+                    f"Has {p if p != 'them' else subj} ever actually told you that you aren't capable, or could {subj} simply have been caught up with a busy, overwhelming day?"
+                )
+
+        # SCENARIO 4: User shares feeling unloved or deeply disappointed
+        if emo in ["unloved", "disappointed"] or any(k in curr for k in ["don't love", "dont love", "disappointed", "dissoppinted"]):
+            if is_roman_urdu:
+                return (
+                    f"Yeh ehsas waqie bohot dukh dene wala hota hai jab lagne lage ke {p if p != 'them' else 'koi apna'} pyar nahi karta ya door ho raha hai. "
+                    "Jab reply mein dair ho to hamara zehan foran sab se bura nateeja sochne lagta hai. "
+                    f"Kya koi aisi wajah bhi ho sakti hai jaise {p if p != 'them' else 'unki'} shadeed masroofiyat ya thakan, jiska talluq unke pyar se bilkul na ho?"
+                )
+            else:
+                return (
+                    f"Feeling unloved and disappointed cuts right to the heart, especially when it involves {p if p != 'them' else 'someone you care deeply about'}. "
+                    "When our minds jump from a delayed text to assuming that someone doesn't love us, it feels like an undeniable reality in the moment. "
+                    f"What is one possible everyday explanation for the delay—like being overwhelmed or exhausted—that might have nothing to do with {poss} love for you?"
+                )
+
+        # SCENARIO 5: User shares the specific text / communication delay trigger
+        if sit == "text_delay" and any(k in curr for k in ["text", "reply", "replied", "message", "1 day", "yesterday", "yestarday"]):
+            if is_roman_urdu:
+                return (
+                    f"Jab aap {p if p != 'them' else 'kisi ko'} message karein aur poora aik din baad jawab aaye, to wo intezar aur khamoshi zehan par bohot bojh dalti hai. "
+                    f"Jab {p if p != 'them' else 'unka'} reply itna late aaya, to is intezar ke dauran aapke dil aur dimagh mein kya khayalat chal rahe thay?"
+                )
+            else:
+                return (
+                    f"Waiting a whole day for a reply from {p if p != 'them' else 'her'} can leave you sitting in really heavy, unsettling silence. "
+                    f"When {p if p != 'them' else 'she'} took that long to text back, what specific worries and automatic thoughts started running through your mind while you waited?"
+                )
+
+        # SCENARIO 6: User expresses feeling ignored
+        if emo == "ignored" or any(k in curr for k in ["ignored", "ignoring"]):
+            if is_roman_urdu:
+                return (
+                    "Nazarandaz hone ka ehsas dil ko bohot dukh aur akelepan mein mubtila kar deta hai. "
+                    "Haal hi mein aisi kya baat ya waqiya pesh aaya jis se aapko aisa mehsoos hona shuru hua?"
+                )
+            else:
+                return (
+                    "Feeling ignored is such a heavy, isolating feeling to carry. "
+                    "Could you share what specifically took place recently that made you feel this way?"
+                )
+
+        # SCENARIO 7: Academic / Project / Exam Context
+        if sit == "academic":
+            if is_roman_urdu:
+                return (
+                    "Imtehan aur parhai ka dabao zehan par bohot bojh dalta hai, khusoosan jab lagne lage ke mustaqbil kharab ho jayega. "
+                    "Is pareshani ke bawajood, is waqt kaun sa chota sa amli qadam aapke ikhtiyar mein hai jo aap utha sakte hain?"
+                )
+            else:
+                return (
+                    "Facing academic pressure and project setbacks can feel completely overwhelming, especially when thoughts tell you that you might fail. "
+                    "Looking at your situation realistically, what is one manageable step you can take today to move forward without demanding 100% perfection?"
+                )
+
+        # SCENARIO 8: Somatic Panic Symptoms
+        if sit == "somatic" and any(k in curr for k in ["chest", "heart", "racing", "breath", "panic", "sleep"]):
+            if is_roman_urdu:
+                return (
+                    "Aksar pareshani jism par pehle asar dalti hai—jaise seene mein khichao ya dil ki tez dhadkan. Yeh zehni khauf ka radde-amal hota hai, koi thos khatra nahi. "
+                    "Kya aap is waqt mere sath 2 minute ke liye aahista aahista gehri saans lene ki koshish karenge?"
+                )
+            else:
+                return (
+                    "Our bodies often carry emotional distress before our minds can fully sort it out—that tight chest and racing heartbeat are your body's alarm system reacting to anxious thoughts. "
+                    "Would you be open to taking three slow, calming breaths with me right now to help your nervous system settle?"
+                )
+
+        return None
 
     def generate_fallback(
         self,
@@ -290,10 +577,32 @@ class FallbackService:
             except Exception:
                 detected_distortion = "None"
 
-        response_text = ""
-        cbt_data = None
+        # 5. DYNAMIC CONTEXTUAL SYNTHESIS FIRST (ELIMINATES REPETITIVE SCRIPTS)
+        narrative = self._extract_narrative(user_text, conversation_context)
+        contextual_reply = self._synthesize_contextual_response(
+            narrative=narrative,
+            user_text=user_text,
+            stage=stage,
+            detected_distortion=detected_distortion,
+            asked_q=asked_q,
+            is_roman_urdu=is_roman_urdu
+        )
 
-        # 5. DISTORTION ANALYSIS STAGE (Stage 5)
+        cbt_data = None
+        if contextual_reply:
+            response_text = contextual_reply
+            cbt_data = {
+                "detected_distortion": detected_distortion or "Mind Reading",
+                "title": f"Cognitive Reframing: {detected_distortion or 'Balanced Perspective'}",
+                "balanced_thought_guidance": response_text
+            }
+            if cbt_guidance and not str(cbt_guidance.detected_distortion).startswith("LABEL_"):
+                cbt_data = cbt_guidance.model_dump()
+                cbt_data["balanced_thought_guidance"] = response_text
+            return response_text, cbt_data
+
+        # 6. DISTORTION ANALYSIS STAGE (Stage 5)
+        response_text = ""
         if stage == "distortion_analysis":
             pool_dict = self.STAGE_POOLS_URDU["distortion_analysis"] if is_roman_urdu else self.STAGE_POOLS_ENG["distortion_analysis"]
             distortion_options = pool_dict.get(detected_distortion, pool_dict["General"])
@@ -305,7 +614,7 @@ class FallbackService:
                 "balanced_thought_guidance": response_text
             }
 
-        # 6. ALL OTHER CANONICAL STAGES
+        # 7. GENERAL CANONICAL STAGES (FALLBACK WITH NON-DUPLICATION)
         elif stage in ["check_in", "exploration", "emotion_and_body", "thought_identification", "intervention", "action_plan", "closure"]:
             pool_list = (self.STAGE_POOLS_URDU if is_roman_urdu else self.STAGE_POOLS_ENG).get(stage, [])
             if pool_list:

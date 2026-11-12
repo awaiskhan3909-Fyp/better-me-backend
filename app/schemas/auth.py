@@ -82,14 +82,24 @@ class EmotionalTrendItem(BaseModel):
     risk_level: str
 
 
+class TherapyOverviewData(BaseModel):
+    recent_distortions: List[str] = []
+    latest_session_date: Optional[str] = None
+    latest_reflection: Optional[str] = None
+    recommended_next_step: str = "Start a guided CBT therapy session or explore the CBT Practice Center."
+
+
 class DashboardStatsResponse(BaseModel):
     user_name: str
     total_sessions: int
     avg_duration_minutes: int
     total_messages: int
+    thoughts_analyzed: int = 0
+    categories_practiced: int = 0
     current_risk_level: str
     primary_focus: List[str]
     primary_goal: Optional[str] = None
     distortions_breakdown: Dict[str, int]
     recent_sessions: List[SessionSummaryItem]
     emotional_trends: List[EmotionalTrendItem]
+    therapy_overview: Optional[TherapyOverviewData] = None

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import health, analyze, conversations, auth, intake, analytics, thought_records, llm
+from app.api.endpoints import health, analyze, conversations, auth, intake, analytics, thought_records, llm, cbt_exercises, stress_relief
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["Health"])
@@ -9,4 +9,6 @@ api_router.include_router(analytics.router, tags=["Dashboard & Analytics"])
 api_router.include_router(analyze.router, tags=["Analysis"])
 api_router.include_router(conversations.router, tags=["Conversations"])
 api_router.include_router(thought_records.router, tags=["CBT Thought Records"])
+api_router.include_router(cbt_exercises.router, tags=["CBT Practice Exercises"])
+api_router.include_router(stress_relief.router, tags=["Instant Stress Relief"])
 api_router.include_router(llm.router, tags=["LLM Inference Engine"])

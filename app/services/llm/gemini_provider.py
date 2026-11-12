@@ -39,10 +39,9 @@ class GeminiLLMProvider(BaseLLMProvider):
         
         # Primary endpoint attempts (fallback chain across fast, quota-available models)
         candidate_models = [
-            self.model_uri,
-            "models/gemini-3.1-flash-lite",
-            "models/gemini-3.5-flash-lite",
-            "models/gemini-3.8-flash",
+            "models/gemini-2.5-flash",
+            "models/gemini-2.0-flash",
+            "models/gemini-1.5-flash",
             "models/gemini-flash-latest"
         ]
         # Remove duplicates while preserving order

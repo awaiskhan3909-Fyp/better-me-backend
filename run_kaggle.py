@@ -246,7 +246,13 @@ def setup_cloudflared():
     print("✅ Cloudflared is installed and ready!")
 
 
+# Global reference to keep tunnel log file descriptor open and prevent SIGPIPE
+_tunnel_log_file = None
+_tunnel_process = None
+
+
 def start_tunnel():
+    global _tunnel_log_file, _tunnel_process
     print("\n" + "━" * 80)
     print("🌍 STEP 5/6: STARTING PUBLIC HTTPS TUNNEL")
     print("━" * 80)
@@ -259,23 +265,27 @@ def start_tunnel():
         except Exception:
             pass
 
-    with open("tunnel.log", "w") as out:
-        subprocess.Popen(
-            ["cloudflared", "tunnel", "--url", "http://127.0.0.1:8000"],
-            stdout=out,
-            stderr=subprocess.STDOUT
-        )
+    # Keep file handle open in global scope so cloudflared doesn't die on closed fd
+    _tunnel_log_file = open("tunnel.log", "a", buffering=1, encoding="utf-8")
+    _tunnel_process = subprocess.Popen(
+        ["cloudflared", "tunnel", "--url", "http://127.0.0.1:8000"],
+        stdout=_tunnel_log_file,
+        stderr=subprocess.STDOUT
+    )
 
     tunnel_url = None
     for _ in range(40):
         time.sleep(1)
         if os.path.exists("tunnel.log"):
-            with open("tunnel.log", "r") as f:
-                content = f.read()
-                match = re.search(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com", content)
-                if match:
-                    tunnel_url = match.group(0)
-                    break
+            try:
+                with open("tunnel.log", "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                    match = re.search(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com", content)
+                    if match:
+                        tunnel_url = match.group(0)
+                        break
+            except Exception:
+                pass
 
     print("\n" + "=" * 80)
     if tunnel_url:
@@ -322,9 +332,13 @@ if __name__ == "__main__":
     print("━" * 80)
     print("Listening on 0.0.0.0:8000. Incoming requests and GPU inference tokens will print live below:\n")
 
-    subprocess.run([
-        sys.executable, "-m", "uvicorn", "app.main:app",
-        "--host", "0.0.0.0",
-        "--port", "8000",
-        "--log-level", "info"
-    ])
+    try:
+        import uvicorn
+        uvicorn.run("app.main:app", host="0.0.0.0", port=8000, log_level="info")
+    except Exception:
+        subprocess.run([
+            sys.executable, "-m", "uvicorn", "app.main:app",
+            "--host", "0.0.0.0",
+            "--port", "8000",
+            "--log-level", "info"
+        ])

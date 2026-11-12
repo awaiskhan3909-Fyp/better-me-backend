@@ -248,6 +248,29 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
 
         target_distortion = distortion_name if distortion_name and distortion_name not in ["None", "Normal", "no distortion"] else None
 
+        # Extract and link multi-model intelligence signals (BERT Distortion, NER, Session State)
+        model_signals = []
+        if prompt:
+            for line in prompt.split("\n"):
+                clean_line = line.strip()
+                if any(clean_line.startswith(prefix) for prefix in [
+                    "Candidate Thought Pattern:",
+                    "Key Situational Details:",
+                    "Active Therapy Stage:",
+                    "Stage Objective:"
+                ]):
+                    model_signals.append(clean_line)
+
+        context_components = []
+        if recent_history and recent_history.strip():
+            context_components.append(f"Recent Conversation:\n{recent_history.strip()}")
+        if model_signals:
+            context_components.append("Clinical Multi-Model Signals:\n" + "\n".join(model_signals))
+        
+        current_thought = user_text.strip() if user_text else prompt.strip()
+        context_components.append(f"Current Patient Message:\n{current_thought}")
+        unified_patient_context = "\n\n".join(context_components)
+
         if is_greeting:
             if is_roman_urdu:
                 instruction = (
@@ -282,7 +305,7 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
                     "Acknowledge this with warmth, humility, and zero defensiveness in 2-3 sentences. "
                     "Apologize directly for the disconnect, validate that their frustration makes complete sense, and invite them to tell you what they would like to focus on right now."
                 )
-            patient_input = user_text if user_text else prompt
+            patient_input = unified_patient_context
             alpaca_prompt = (
                 f"Below is an instruction that describes a clinical de-escalation and humble therapeutic feedback task. "
                 f"Write a warm, sincere therapist response acknowledging the disconnect without defensiveness.\n\n"
@@ -294,18 +317,18 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
             if is_roman_urdu:
                 instruction = (
                     "You are Better Me, an empathetic and practical clinical CBT companion. The patient is asking for practical solutions and therapy guidance for their stress. "
-                    "Respond with deep empathy and clarity in natural Roman Urdu. "
+                    "Synthesize the situational details and cognitive distortion signals into a cohesive, compassionate response in natural Roman Urdu. "
                     "Provide 2-3 clear, practical CBT coping steps (e.g., breaking workload into micro-tasks, easing perfectionism, 2-minute somatic breathing). "
                     "Conclude with ONE supportive check-in question on which step feels most approachable."
                 )
             else:
                 instruction = (
                     "You are Better Me, an empathetic and practical clinical CBT companion. The patient is asking for concrete solutions, practical coping advice, and therapy guidance. "
-                    "Respond with compassion, structure, and clarity. "
+                    "Synthesize the situational details (exams, workplace, deadlines) and detected cognitive distortion signals into a cohesive, compassionate response. "
                     "Provide 2-3 structured, actionable CBT coping steps tailored to their situation (e.g., micro-chunking the workload, letting go of all-or-nothing perfectionism, breathing reset). "
                     "Conclude with ONE supportive check-in question on which step feels most approachable."
                 )
-            patient_input = user_text if user_text else prompt
+            patient_input = unified_patient_context
             alpaca_prompt = (
                 f"Below is an instruction that describes a clinical CBT problem-solving and guidance task. "
                 f"Write a structured, compassionate therapist response that provides 2-3 practical CBT steps and ends with a supportive question.\n\n"
@@ -317,42 +340,35 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
             if is_roman_urdu:
                 if target_distortion:
                     instruction = (
-                        f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion} and is speaking in Roman Urdu. "
-                        f"Respond warmly and empathetically in natural, conversational Roman Urdu (Latin script Urdu). "
+                        f"You are Better Me, a clinical CBT companion. The clinical distortion model identified {target_distortion}. "
+                        f"Synthesize the user's situation and this thinking pattern warmly and empathetically in natural, conversational Roman Urdu (Latin script Urdu). "
                         f"Validate their distress, offer a balanced alternative perspective, and conclude with exactly ONE gentle question to help them reflect."
                     )
                 else:
                     instruction = (
                         "You are Better Me, an empathetic clinical CBT companion. The patient is speaking in Roman Urdu. "
-                        "Respond with warmth, active listening, and calm emotional validation in conversational Roman Urdu. "
+                        "Respond with warmth, active listening, and calm emotional validation in conversational Roman Urdu based on the situation details. "
                         "Do NOT overwhelm with multiple questions. Ask only ONE supportive question at the end."
                     )
             else:
                 if target_distortion:
                     instruction = (
-                        f"You are Better Me, a clinical CBT companion. The patient exhibits {target_distortion}. "
-                        f"Validate their emotional distress with deep empathy and active listening. "
-                        f"Offer a balanced, constructive reframe, and conclude with exactly ONE focused, open-ended question to help them reflect on this thought."
+                        f"You are Better Me, a clinical CBT companion. The clinical distortion model identified {target_distortion}. "
+                        f"Synthesize their situational context (workplace, academics, routine) and validate their emotional distress with deep empathy. "
+                        f"Offer a balanced, constructive reframe of this thought, and conclude with exactly ONE focused, open-ended question to help them reflect."
                     )
                 else:
                     instruction = (
                         "You are Better Me, a clinical CBT companion. "
-                        "Provide compassionate validation and thoughtful active listening tailored specifically to what the patient shared. "
+                        "Provide compassionate validation and thoughtful active listening tailored specifically to the situational details they shared. "
                         "Never ask multiple questions in one reply. Ask only ONE gentle, open-ended question at the end to explore how they are feeling."
                     )
 
-            # Input is focused on the patient's distressed thought
-            if user_text:
-                if recent_history:
-                    patient_input = f"{recent_history}\nCurrent Thought: {user_text}"
-                else:
-                    patient_input = user_text
-            else:
-                patient_input = prompt
+            patient_input = unified_patient_context
 
             alpaca_prompt = (
-                f"Below is an instruction that describes a clinical CBT therapeutic task, paired with an input containing the patient's distressed thought. "
-                f"Write a direct, compassionate therapist response that provides empathetic validation and ends with a single reflective question. "
+                f"Below is an instruction that describes a clinical CBT therapeutic task, paired with an input containing the patient's thoughts and multi-model context. "
+                f"Write a direct, compassionate therapist response that provides empathetic validation, connects with their context, and ends with a single reflective question. "
                 f"Keep it supportive, natural, and grounded in CBT without repetitive questions or robotic commentary.\n\n"
                 f"### Instruction:\n{instruction}\n\n"
                 f"### Input:\n{patient_input}\n\n"

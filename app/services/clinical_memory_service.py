@@ -170,6 +170,7 @@ class ClinicalMemoryService:
             lines.append(f"  • Past situation: \"{relevant_episode.situation_context[:100]}\"")
             lines.append(f"  • Reframed thought: \"{relevant_episode.rational_reframe[:120]}\"")
             lines.append("CLINICAL DIRECTIVE: If natural, reference their past resilience or learned coping strategy to foster self-efficacy.")
+            lines.append("LANGUAGE NOTE: Past notes may be in English or Roman Urdu; NEVER adopt their language if it differs from the current message's language.")
 
         lines.append("--------------------------------------------")
         return "\n".join(lines)

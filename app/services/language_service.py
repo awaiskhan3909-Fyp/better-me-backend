@@ -7,18 +7,22 @@ from typing import NamedTuple
 
 logger = logging.getLogger("better_me.language_service")
 
-# High-frequency Roman Urdu words & phonetic markers (excluding colliding English words like 'the', 'me', 'to', 'or')
+# High-frequency Roman Urdu words & phonetic markers (excluding colliding English words like 'the', 'me', 'to', 'or', 'lag', 'par', 'ho')
 ROMAN_URDU_MARKERS = {
     "hai", "hain", "mein", "mai", "mera", "meri", "mere", "mujhe", "mjy", "mjhy",
-    "mje", "tum", "aap", "ap", "kya", "kyun", "kion", "kaise", "kese", "nahi", "nhi",
-    "nh", "ni", "bohat", "bht", "buht", "bhot", "kuch", "kch", "raha", "rahi", "rahe",
-    "karna", "krna", "hoga", "hogi", "hoge", "ho", "tha", "thi", "thay", "bhi",
-    "toh", "par", "pe", "sirf", "zindagi", "zindgi", "dost", "parhai", "dil", "lag",
-    "lagta", "lgta", "khud", "marne", "marna", "chahiye", "chahye", "shyd", "shyad",
-    "shayad", "sab", "sb", "khatam", "khtm", "udas", "pareshan", "preshan", "gaya",
-    "gya", "koi", "aur", "hoon", "hn", "hun", "wala", "wali", "wale", "baat",
-    "bt", "bura", "achha", "acha", "accha", "theek", "thik", "thk", "yaar", "yr",
-    "naukri", "paisa", "paise", "rishta", "rishtey", "kharab", "waja", "samajh", "bhai"
+    "mje", "tum", "aap", "ap", "apka", "aapka", "apki", "aapki", "apke", "aapke",
+    "kya", "kyun", "kion", "kaise", "kese", "nahi", "nhi", "nh", "ni",
+    "bohat", "bht", "buht", "bhot", "kuch", "kch", "raha", "rahi", "rahe",
+    "karna", "krna", "karein", "karen", "karta", "karti", "karte",
+    "hoga", "hogi", "hoge", "hona", "hone", "hota", "hoti", "hote",
+    "tha", "thi", "thay", "the", "bhi", "toh", "pe", "sirf",
+    "zindagi", "zindgi", "dost", "parhai", "dil",
+    "lagta", "lagti", "lagte", "lgta", "khud", "marne", "marna",
+    "chahiye", "chahye", "shyd", "shyad", "shayad", "khatam", "khtm",
+    "udas", "pareshan", "preshan", "gaya", "gya", "koi", "aur", "hoon", "hn", "hun",
+    "wala", "wali", "wale", "baat", "bt", "bura", "achha", "acha", "accha",
+    "theek", "thik", "thk", "yaar", "yr", "naukri", "paisa", "paise",
+    "rishta", "rishtey", "kharab", "waja", "samajh", "bhai", "hum", "humein"
 }
 
 # Standard common English words used for disambiguation
@@ -28,12 +32,17 @@ ENGLISH_STOPWORDS = {
     "but", "if", "then", "because", "as", "until", "while", "of", "at", "by",
     "for", "with", "about", "against", "between", "into", "through", "during",
     "before", "after", "above", "below", "to", "from", "up", "down", "in", "out",
-    "on", "off", "over", "under", "again", "further", "then", "once", "here",
+    "on", "off", "over", "under", "again", "further", "once", "here",
     "there", "when", "where", "why", "how", "all", "any", "both", "each", "few",
     "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own",
     "same", "so", "than", "too", "very", "can", "will", "just", "dont",
     "should", "now", "failed", "exam", "today", "tomorrow", "my", "your", "his",
-    "her", "their", "our", "me", "feel", "feeling", "good", "morning", "test"
+    "her", "their", "our", "me", "feel", "feeling", "good", "morning", "test",
+    "pain", "hurt", "table", "dinner", "angry", "ignored", "get", "got", "talk",
+    "talking", "help", "want", "wanted", "need", "think", "thinking", "bad", "sad",
+    "upset", "friend", "family", "work", "school", "people", "said", "say", "told",
+    "tell", "life", "live", "living", "day", "night", "hard", "time", "feelings",
+    "myself", "someone", "please", "reach", "professional", "number", "numbers"
 }
 
 # Slang & Contraction Normalization Map
@@ -133,14 +142,20 @@ class LanguageService:
         ru_matches = sum(1 for t in tokens if t in ROMAN_URDU_MARKERS)
         en_matches = sum(1 for t in tokens if t in ENGLISH_STOPWORDS)
 
-        # Clear English sentences should never be detected as Roman Urdu
-        if en_matches >= 2 and ru_matches == 0:
-            return False
-        if en_matches > ru_matches and ru_matches < 2:
+        # 1. Any sentence with English words and NO Roman Urdu markers is English
+        if en_matches > 0 and ru_matches == 0:
             return False
 
-        # Matched if 2+ genuine Urdu markers, or short unambiguous slang text, or more Urdu than English
-        return (ru_matches >= 2) or (len(tokens) <= 3 and ru_matches >= 1 and en_matches == 0) or (ru_matches > en_matches)
+        # 2. If English words outnumber or match Roman Urdu markers, treat as English
+        if en_matches >= ru_matches:
+            return False
+
+        # 3. If multiple English words are present, require strong Roman Urdu dominance
+        if en_matches >= 2:
+            return (ru_matches >= 3) and (ru_matches > en_matches * 2)
+
+        # 4. Standard Roman Urdu: 2+ markers, or short unambiguous text (e.g. "bohat udas", "kya karun")
+        return (ru_matches >= 2) or (len(tokens) <= 4 and ru_matches >= 1 and en_matches == 0)
 
     def normalize_slang(self, text: str) -> str:
         """Normalizes informal phonetic contractions and abbreviations."""

@@ -21,7 +21,7 @@ class FallbackService:
     SAFETY_OVERRIDE_TEXT = (
         "Your safety and well-being are the absolute priority. "
         "If you or someone you know is experiencing thoughts of self-harm, suicide, or overwhelming crisis, "
-        "please reach out immediately to a trusted healthcare professional or emergency helpline (such as 988).\n"
+        "please reach out immediately to a trusted healthcare professional or emergency helpline (Dial 1166 to access the federal health helpline).\n"
         "Support is available 24/7 and you do not have to carry this alone."
     )
 
@@ -30,7 +30,7 @@ class FallbackService:
         "Agar aap shadeed takleef ya khudkushi ke khayalat se guzar rahe hain, "
         "to barah-e-karam foran kisi doctor ya crisis helpline se rabta karein:\n"
         "• Pakistan Mental Health Helpline (Umang): 0311-7786264 / 0317-4288898\n"
-        "• International Crisis Helpline: 988\n"
+        "• Federal Health Helpline: 1166 par dial karein\n"
         "Aap akele nahi hain, madad 24/7 dastiyab hai."
     )
 

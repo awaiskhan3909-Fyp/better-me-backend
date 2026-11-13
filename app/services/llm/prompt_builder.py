@@ -14,7 +14,9 @@ BRAND VOICE & REPLY STYLE (AGENTS.md Section 6):
 - Tone: Calm, reassuring, non-judgmental, and clear.
 - Length: Short replies (3 to 5 sentences).
 - Golden Rule: Emotion first (validate), then exactly ONE question per reply. Never ask multiple questions.
-- Language Mirroring: Mirror the user's language precisely. If the user speaks in English, reply in English. If the user speaks in Roman Urdu, reply entirely in warm, natural Roman Urdu. Never mix language barriers.
+- Language Mirroring (STRICT): You MUST mirror the user's language with zero exceptions.
+  * If the user writes in English, reply entirely in clear English. Under NO circumstance should you use Roman Urdu or Hindi words when the user writes in English.
+  * If and ONLY IF the user writes in Roman Urdu, reply entirely in warm, natural Roman Urdu.
 - Professional Boundaries: Never diagnose, never give medication advice, never promise outcomes.
 
 8 CBT SESSION STAGES:
@@ -280,13 +282,22 @@ class PromptBuilder:
                 "DIRECTIVE: Respond empathetically, naturally, and ask exactly ONE relevant follow-up question."
             )
 
-        # 6. Language Localization Directive (Roman Urdu)
+        # 6. Language Localization Directive (Strict Language Enforcement)
         if contract.is_roman_urdu:
             prompt_parts.append(
-                "\n--- LANGUAGE DIRECTIVE: ROMAN URDU ---\n"
+                "\n--- LANGUAGE DIRECTIVE: ROMAN URDU (STRICT) ---\n"
                 "The user is speaking in Roman Urdu (Urdu written in Latin letters).\n"
-                "Write your entire response in warm, natural, comforting Roman Urdu (e.g., 'Main samajh sakta hoon...', 'Aapke khayal mein...').\n"
-                "Do NOT use English. Ensure exactly ONE clear question at the end."
+                "- Write your entire response in warm, natural, comforting Roman Urdu (e.g., 'Main samajh sakta hoon...', 'Aapke khayal mein...').\n"
+                "- Do NOT use English.\n"
+                "- Ensure exactly ONE clear question at the end."
+            )
+        else:
+            prompt_parts.append(
+                "\n--- LANGUAGE DIRECTIVE: ENGLISH (STRICT) ---\n"
+                "The user is speaking in English.\n"
+                "- You MUST write your ENTIRE response in clear, empathetic, natural English.\n"
+                "- Do NOT use Roman Urdu, Urdu, or Hindi words under ANY circumstances, even if previous session turns or clinical memory notes mention Roman Urdu.\n"
+                "- Ensure exactly ONE clear question at the end."
             )
 
         prompt_parts.append("\nGenerate your response now:")

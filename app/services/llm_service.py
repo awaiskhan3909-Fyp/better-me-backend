@@ -3,10 +3,9 @@ import logging
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 
-from app.core.config import LLM_FALLBACK_ENABLED, LLM_PROVIDER, HF_LLM_REPO, USE_LOCAL_LLM
+from app.core.config import LLM_FALLBACK_ENABLED
 from app.services.llm import (
     GeminiLLMProvider,
-    HuggingFaceLLMProvider,
     prompt_builder,
     PROMPT_VERSION,
     response_parser,
@@ -19,33 +18,10 @@ logger = logging.getLogger("better_me.llm_service")
 
 
 def get_default_provider():
-    # 1. If Kaggle/Colab GPU bridge URL is set in env, use HuggingFace remote bridge
-    kaggle_url = os.getenv("KAGGLE_LLM_URL") or os.getenv("KAGGLE_API_URL")
-    if kaggle_url and kaggle_url.strip():
-        logger.info(f"Using Remote Kaggle GPU Bridge: {kaggle_url}")
-        return HuggingFaceLLMProvider(repo_id=HF_LLM_REPO, use_local_pipeline=False)
-
-    # 2. If CUDA is physically available on this machine (e.g. running directly on GPU)
-    try:
-        import torch
-        if torch.cuda.is_available() and (USE_LOCAL_LLM or LLM_PROVIDER in ["local_hf", "huggingface"]):
-            logger.info("Using Local CUDA GPU 4-bit LLaMA-3 LoRA Pipeline")
-            return HuggingFaceLLMProvider(repo_id=HF_LLM_REPO, use_local_pipeline=True)
-    except Exception:
-        pass
-
-    # 3. If Gemini API Key is configured in .env, use Gemini (free, fast, ChatGPT-level quality)
-    if os.getenv("GEMINI_API_KEY") and os.getenv("GEMINI_API_KEY").strip():
-        logger.info("Using Google Gemini API Provider (High-Fidelity Clinical Conversational Intelligence)")
-        return GeminiLLMProvider(api_key=os.getenv("GEMINI_API_KEY").strip())
-
-    # 4. Standard HuggingFace Provider (HF token or lazy loader)
-    if LLM_PROVIDER in ["huggingface", "local_hf", "hf"]:
-        logger.info(f"Using Open-Source HuggingFace Provider for CBT ({HF_LLM_REPO})")
-        return HuggingFaceLLMProvider(
-            repo_id=HF_LLM_REPO,
-            use_local_pipeline=USE_LOCAL_LLM or (LLM_PROVIDER == "local_hf")
-        )
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if api_key:
+        logger.info("Using Google Gemini API Provider (Clinical Conversational Intelligence)")
+        return GeminiLLMProvider(api_key=api_key)
     return GeminiLLMProvider()
 
 
@@ -61,8 +37,7 @@ class LLMResult(BaseModel):
 class LLMService:
     """
     Unified Orchestrator for Conversational LLM Integration.
-    Supports both Google Gemini API and Fine-Tuned Open-Source HuggingFace Models.
-    Controls prompt construction, provider delegation, response validation,
+    Utilizes Google Gemini API with clinical prompt governance,
     deterministic safety overrides, and seamless offline fallbacks.
     """
 

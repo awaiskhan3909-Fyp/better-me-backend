@@ -520,11 +520,16 @@ def download_conversation_report(
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found.")
 
+    user_repo = UserRepository(db)
+    demo_user = user_repo.get_or_create_default_user()
     if user_id:
         try:
             req_user_uuid = uuid.UUID(str(user_id))
-            if conversation.user_id != req_user_uuid:
+            if conversation.user_id != req_user_uuid and conversation.user_id != demo_user.id:
                 raise HTTPException(status_code=403, detail="Unauthorized access to this session report.")
+            if conversation.user_id == demo_user.id and req_user_uuid != demo_user.id:
+                conversation.user_id = req_user_uuid
+                db.commit()
         except ValueError:
             pass
 
@@ -560,11 +565,16 @@ def get_conversation_report_summary(
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found.")
 
+    user_repo = UserRepository(db)
+    demo_user = user_repo.get_or_create_default_user()
     if user_id:
         try:
             req_user_uuid = uuid.UUID(str(user_id))
-            if conversation.user_id != req_user_uuid:
+            if conversation.user_id != req_user_uuid and conversation.user_id != demo_user.id:
                 raise HTTPException(status_code=403, detail="Unauthorized access to this session report.")
+            if conversation.user_id == demo_user.id and req_user_uuid != demo_user.id:
+                conversation.user_id = req_user_uuid
+                db.commit()
         except ValueError:
             pass
 
@@ -594,11 +604,16 @@ def complete_conversation_session(
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found.")
 
+    user_repo = UserRepository(db)
+    demo_user = user_repo.get_or_create_default_user()
     if user_id:
         try:
             req_user_uuid = uuid.UUID(str(user_id))
-            if conversation.user_id != req_user_uuid:
+            if conversation.user_id != req_user_uuid and conversation.user_id != demo_user.id:
                 raise HTTPException(status_code=403, detail="Unauthorized access to this session.")
+            if conversation.user_id == demo_user.id and req_user_uuid != demo_user.id:
+                conversation.user_id = req_user_uuid
+                db.commit()
         except ValueError:
             pass
 

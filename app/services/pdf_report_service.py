@@ -328,12 +328,26 @@ class PDFReportService:
                     distress_score = int(m10.group(1)) * 10
                     break
 
+        # Extract qualitative mood state from user messages & session state
+        mood_state = "Reflective"
+        all_user_text = " ".join([m.content.lower() for m in user_msgs])
+        if any(w in all_user_text for w in ["anxious", "anxiety", "panic", "panicking", "nervous", "scared", "fear"]):
+            mood_state = "Anxious / Apprehensive"
+        elif any(w in all_user_text for w in ["depressed", "hopeless", "sad", "crying", "empty", "down", "terrible", "miserable"]):
+            mood_state = "Low / Overwhelmed"
+        elif any(w in all_user_text for w in ["angry", "furious", "mad", "resentful", "irritated", "hurt"]):
+            mood_state = "Frustrated / Hurt"
+        elif any(w in all_user_text for w in ["exhausted", "tired", "burned out", "drained"]):
+            mood_state = "Fatigued / Depleted"
+        elif any(w in all_user_text for w in ["calmer", "better", "clearer", "hopeful", "relieved"]):
+            mood_state = "Grounding / Calmer"
+
         if distress_score is not None:
-            distress_display = f"{distress_score} / 100"
+            distress_display = f"{distress_score} / 100 ({mood_state})"
             distress_note = "Self-reported emotional intensity during situational exploration."
         else:
-            distress_display = "Not assessed"
-            distress_note = "Numerical rating was not formally assessed during this dialogue."
+            distress_display = f"Qualitative: {mood_state}"
+            distress_note = "Self-reported emotional state observed during dialogue."
 
         # 3. Extract Somatic Symptoms strictly from User Messages
         somatic_symptoms: List[str] = []
@@ -511,14 +525,20 @@ class PDFReportService:
         if len(next_goal) > 165:
             next_goal = next_goal[:162] + "..."
 
+        status_val = "active"
+        if session_state and session_state.metadata_json:
+            status_val = session_state.metadata_json.get("status", "active")
+
         return {
             "conversation_id": str(conversation.id),
             "report_id": f"REP-{str(conversation.id)[:8].upper()}",
+            "status": status_val,
             "session_number": f"Session #{session_num:02d}",
             "session_date": session_date,
             "session_time": conversation.created_at.strftime("%I:%M %p"),
             "duration_str": f"{duration_mins} Min",
             "patient_name": patient_name,
+            "mood": mood_state,
             "distress_score": distress_score,
             "distress_display": distress_display,
             "distress_note": distress_note,

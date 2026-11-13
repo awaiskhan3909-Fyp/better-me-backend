@@ -53,6 +53,12 @@ class Conversation(Base):
     ai_responses: Mapped[List["AIResponse"]] = relationship("AIResponse", back_populates="conversation", cascade="all, delete-orphan")
     session_state: Mapped[Optional["ConversationSessionState"]] = relationship("ConversationSessionState", back_populates="conversation", uselist=False, cascade="all, delete-orphan")
 
+    @property
+    def status(self) -> str:
+        if self.session_state and self.session_state.metadata_json:
+            return self.session_state.metadata_json.get("status", "active")
+        return "active"
+
 
 class Message(Base):
     __tablename__ = "messages"

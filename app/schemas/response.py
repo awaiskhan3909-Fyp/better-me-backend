@@ -75,6 +75,7 @@ class ConversationResponse(BaseModel):
     title: str
     current_risk_level: str
     is_archived: bool
+    status: str = "active"
     created_at: datetime
     updated_at: datetime
 

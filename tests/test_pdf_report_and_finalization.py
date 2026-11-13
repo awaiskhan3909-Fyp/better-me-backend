@@ -225,6 +225,22 @@ class TestCBTFinalizationAndPDFReport(unittest.TestCase):
         self.assertEqual(res.status_code, 403)
         self.assertIn("Unauthorized access", res.json()["detail"])
 
+    def test_10_api_endpoint_complete_session(self):
+        """Verifies POST /api/conversations/{id}/complete marks session completed and returns rich summary."""
+        conv = self.db.query(Conversation).filter(Conversation.user_id == self.test_user.id).first()
+        res = self.client.post(f"/api/conversations/{conv.id}/complete")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data["status"], "completed")
+        self.assertIn("presenting_concern", data)
+        self.assertIn("homework", data)
+        self.assertIn("next_session_goal", data)
+
+        # Check that GET /conversations/{id} reports status: completed
+        get_res = self.client.get(f"/api/conversations/{conv.id}")
+        self.assertEqual(get_res.status_code, 200)
+        self.assertEqual(get_res.json()["status"], "completed")
+
 
 if __name__ == "__main__":
     unittest.main()

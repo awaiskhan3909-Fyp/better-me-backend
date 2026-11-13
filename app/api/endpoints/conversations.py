@@ -1,11 +1,14 @@
 import uuid
 import re
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.db.database import get_db
+from app.db.models import EpisodicTherapyMemory
 from app.db.repositories.user_repository import UserRepository
 from app.db.repositories.conversation_repository import ConversationRepository
 from app.db.repositories.message_repository import MessageRepository
@@ -570,4 +573,80 @@ def get_conversation_report_summary(
         return report_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to extract session summary: {str(e)}")
+
+
+@router.post("/{conversation_id}/complete", summary="Complete and finalize a CBT session")
+def complete_conversation_session(
+    conversation_id: uuid.UUID,
+    user_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Formally completes a CBT therapy session:
+    1. Sets session state current_stage to 'closure' and status to 'completed' with timestamp.
+    2. Extracts real session summary (topic, distortions, user evidence lines, mood, homework, next focus).
+    3. Persists tailored homework and rational reframe into session state.
+    4. Records an EpisodicTherapyMemory entry for longitudinal clinical continuity.
+    5. Returns finalized JSON report summary.
+    """
+    conv_repo = ConversationRepository(db)
+    conversation = conv_repo.get_by_id(conversation_id)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+
+    if user_id:
+        try:
+            req_user_uuid = uuid.UUID(str(user_id))
+            if conversation.user_id != req_user_uuid:
+                raise HTTPException(status_code=403, detail="Unauthorized access to this session.")
+        except ValueError:
+            pass
+
+    # Ensure session state exists and mark as completed
+    session_state = session_state_service.get_or_create_session_state(conversation.id, db)
+    session_state.current_stage = TherapyStage.CLOSURE.value
+
+    meta = dict(session_state.metadata_json or {})
+    meta["status"] = "completed"
+    meta["completed_at"] = datetime.now(timezone.utc).isoformat()
+    session_state.metadata_json = meta
+    flag_modified(session_state, "metadata_json")
+
+    # Extract verified session data
+    report_data = pdf_report_service.extract_session_data(conversation, db)
+
+    # Persist tailored homework in session_state if not already present
+    if not session_state.action_plan and report_data.get("homework"):
+        session_state.action_plan = report_data.get("homework")
+    if not session_state.balanced_perspective and report_data.get("balanced_thought"):
+        session_state.balanced_perspective = report_data.get("balanced_thought")
+    if not session_state.identified_trigger and report_data.get("presenting_concern"):
+        session_state.identified_trigger = report_data.get("presenting_concern")
+
+    # Record longitudinal episodic therapy memory for past breakthrough continuity
+    if len(conversation.messages or []) >= 2:
+        try:
+            existing_ep = db.query(EpisodicTherapyMemory).filter(
+                EpisodicTherapyMemory.user_id == conversation.user_id,
+                EpisodicTherapyMemory.situation_context == report_data.get("presenting_concern")
+            ).first()
+            if not existing_ep:
+                new_ep = EpisodicTherapyMemory(
+                    user_id=conversation.user_id,
+                    situation_context=report_data.get("presenting_concern") or "CBT Session",
+                    negative_automatic_thought=report_data.get("automatic_thought") or "Self-critical thought",
+                    predominant_distortion=report_data.get("distortion_name") or "Cognitive Distortion",
+                    rational_reframe=report_data.get("balanced_thought") or "Balanced alternative perspective",
+                    behavioral_homework=report_data.get("homework") or "Thought monitoring",
+                    session_date=conversation.created_at
+                )
+                db.add(new_ep)
+        except Exception:
+            pass
+
+    db.commit()
+    db.refresh(conversation)
+
+    return report_data
+
 

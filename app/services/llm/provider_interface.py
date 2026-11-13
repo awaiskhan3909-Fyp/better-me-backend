@@ -23,6 +23,18 @@ class BaseLLMProvider(ABC):
         pass
 
     @abstractmethod
-    def generate(self, prompt: str, system_instruction: str, temperature: float = 0.7, max_tokens: int = 512) -> ProviderLLMResponse:
+    def generate(
+        self,
+        prompt: str,
+        system_instruction: str,
+        temperature: float = 0.7,
+        max_tokens: int = 512,
+        user_text: Optional[str] = None,
+        strategy: Optional[str] = None,
+        distortion_name: Optional[str] = None,
+        is_roman_urdu: bool = False,
+        recent_history: Optional[str] = None,
+        **kwargs
+    ) -> ProviderLLMResponse:
         """Executes prompt generation against the LLM provider."""
         pass

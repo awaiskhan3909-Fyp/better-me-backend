@@ -1,7 +1,7 @@
 import time
 import requests
 import logging
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from app.core.config import GEMINI_API_KEY, GEMINI_MODEL
 from app.services.llm.provider_interface import BaseLLMProvider, ProviderLLMResponse
@@ -12,92 +12,147 @@ logger = logging.getLogger("better_me.gemini_provider")
 class GeminiLLMProvider(BaseLLMProvider):
     """
     Google Gemini API Provider implementation via direct Google REST API.
-    Supports gemini-flash-lite-latest, gemini-3.8-flash, etc. without external typing conflicts.
+    Sends API key in x-goog-api-key header and uses only the configured GEMINI_MODEL.
+    Supports multi-turn contents format, 12s timeout, and single retry on 429/5xx.
     """
 
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
-        self.api_key = api_key or GEMINI_API_KEY
+        self.api_key = (api_key or GEMINI_API_KEY or "").strip()
         configured_model = (model_name or GEMINI_MODEL or "").strip()
         if configured_model:
-            if not configured_model.startswith("models/"):
-                self.model_uri = f"models/{configured_model}"
-                self.model_name = configured_model
-            else:
-                self.model_uri = configured_model
+            if configured_model.startswith("models/"):
                 self.model_name = configured_model.replace("models/", "")
+            else:
+                self.model_name = configured_model
         else:
-            self.model_uri = None
             self.model_name = ""
-            
-        logger.info(f"Initialized Gemini Provider with model '{self.model_name}' (URI: {self.model_uri})")
+
+        logger.info(f"Initialized Gemini Provider with model '{self.model_name}'")
 
     def is_available(self) -> bool:
         return bool(self.api_key and self.api_key.strip())
 
-    def generate(self, prompt: str, system_instruction: str, temperature: float = 0.7, max_tokens: int = 512, **kwargs) -> ProviderLLMResponse:
+    def _build_contents(self, prompt: str, recent_history: Optional[str] = None) -> List[Dict[str, Any]]:
+        raw_turns = []
+        if recent_history and recent_history.strip():
+            lines = recent_history.strip().split("\n")
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                if line.startswith("Patient:") or line.startswith("User:"):
+                    prefix_len = len("Patient:") if line.startswith("Patient:") else len("User:")
+                    msg_text = line[prefix_len:].strip()
+                    if msg_text:
+                        raw_turns.append({"role": "user", "parts": [{"text": msg_text}]})
+                elif line.startswith("Better Me:") or line.startswith("Assistant:") or line.startswith("AI:"):
+                    if line.startswith("Better Me:"):
+                        prefix_len = len("Better Me:")
+                    elif line.startswith("Assistant:"):
+                        prefix_len = len("Assistant:")
+                    else:
+                        prefix_len = len("AI:")
+                    msg_text = line[prefix_len:].strip()
+                    if msg_text:
+                        raw_turns.append({"role": "model", "parts": [{"text": msg_text}]})
+
+        # Merge consecutive turns of identical role
+        contents = []
+        for turn in raw_turns:
+            if contents and contents[-1]["role"] == turn["role"]:
+                contents[-1]["parts"][0]["text"] += "\n" + turn["parts"][0]["text"]
+            else:
+                contents.append(turn)
+
+        # Append current user prompt as final turn
+        if contents and contents[-1]["role"] == "user":
+            contents[-1]["parts"][0]["text"] += "\n\n" + prompt
+        else:
+            contents.append({"role": "user", "parts": [{"text": prompt}]})
+
+        return contents
+
+    def generate(
+        self,
+        prompt: str,
+        system_instruction: str,
+        temperature: float = 0.7,
+        max_tokens: int = 512,
+        user_text: Optional[str] = None,
+        strategy: Optional[str] = None,
+        distortion_name: Optional[str] = None,
+        is_roman_urdu: bool = False,
+        recent_history: Optional[str] = None,
+        **kwargs
+    ) -> ProviderLLMResponse:
         if not self.is_available():
             raise RuntimeError("Gemini LLM Provider is not available or API key missing.")
 
-        start_time = time.time()
-        
-        # Primary endpoint attempts (user model first, then verified quota-available fallback chain)
-        candidate_models = []
-        if self.model_uri:
-            candidate_models.append(self.model_uri)
-        candidate_models.extend([
-            "models/gemini-flash-lite-latest",
-            "models/gemini-3.8-flash",
-            "models/gemini-flash-latest",
-            "models/gemini-2.5-flash-lite"
-        ])
-        # Remove duplicates while preserving order
-        candidate_models = list(dict.fromkeys(candidate_models))
+        model_slug = (self.model_name or GEMINI_MODEL or "").strip()
+        if not model_slug:
+            raise RuntimeError("GEMINI_MODEL is not set in environment or configuration.")
+        if model_slug.startswith("models/"):
+            model_slug = model_slug.replace("models/", "")
 
-        last_exception = None
-        response_json = None
-        used_model = self.model_name
+        endpoint_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_slug}:generateContent"
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": self.api_key
+        }
 
-        for target_model in candidate_models:
-            endpoint_url = f"https://generativelanguage.googleapis.com/v1beta/{target_model}:generateContent?key={self.api_key}"
-            
-            payload = {
-                "contents": [
-                    {
-                        "role": "user",
-                        "parts": [{"text": prompt}]
-                    }
-                ],
-                "systemInstruction": {
-                    "parts": [{"text": system_instruction}]
-                },
-                "generationConfig": {
-                    "temperature": temperature,
-                    "maxOutputTokens": max_tokens
-                }
+        contents = self._build_contents(prompt=prompt, recent_history=recent_history)
+
+        payload = {
+            "contents": contents,
+            "systemInstruction": {
+                "parts": [{"text": system_instruction}]
+            },
+            "generationConfig": {
+                "temperature": temperature,
+                "maxOutputTokens": max_tokens
             }
+        }
 
+        start_time = time.time()
+        response_json = None
+        last_exception = None
+
+        # Execute request with 12s timeout and single retry on 429/5xx
+        for attempt in range(2):
             try:
-                resp = requests.post(endpoint_url, json=payload, timeout=12)
+                resp = requests.post(endpoint_url, headers=headers, json=payload, timeout=12)
                 if resp.status_code == 200:
                     response_json = resp.json()
-                    used_model = target_model.replace("models/", "")
                     break
-                else:
-                    logger.warning(f"Model URI '{target_model}' returned status {resp.status_code}: {resp.text[:200]}")
-                    last_exception = RuntimeError(f"HTTP {resp.status_code}: {resp.text[:200]}")
-            except Exception as e:
-                logger.warning(f"Failed request to '{target_model}': {e}")
+
+                if resp.status_code in (429, 500, 502, 503, 504) and attempt == 0:
+                    logger.warning(
+                        f"Gemini API returned retryable status {resp.status_code} for '{model_slug}'. Retrying once in 1s..."
+                    )
+                    time.sleep(1.0)
+                    continue
+
+                logger.warning(f"Gemini API returned status {resp.status_code}: {resp.text[:200]}")
+                last_exception = RuntimeError(f"HTTP {resp.status_code}: {resp.text[:200]}")
+                break
+
+            except requests.RequestException as e:
+                if attempt == 0:
+                    logger.warning(f"Gemini API request exception ({e}). Retrying once in 1s...")
+                    time.sleep(1.0)
+                    continue
                 last_exception = e
+                break
 
         if not response_json:
-            raise RuntimeError(f"All Gemini model endpoint attempts failed: {last_exception}")
+            raise RuntimeError(f"Gemini API call failed for model '{model_slug}': {last_exception}")
 
         latency_ms = round((time.time() - start_time) * 1000, 2)
-        
+
         try:
             candidates = response_json.get("candidates", [])
             if not candidates:
-                raise ValueError("Gemini API returned response without candidates.")
+                raise ValueError(f"Gemini API response contained no candidates: {response_json}")
 
             content_parts = candidates[0].get("content", {}).get("parts", [])
             if not content_parts:
@@ -116,7 +171,7 @@ class GeminiLLMProvider(BaseLLMProvider):
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
                 latency_ms=latency_ms,
-                model_name=used_model,
+                model_name=model_slug,
                 provider_name="google_gemini"
             )
 

@@ -3,7 +3,7 @@ import requests
 import logging
 from typing import Optional
 
-from app.core.config import GEMINI_API_KEY, LLM_MODEL_NAME
+from app.core.config import GEMINI_API_KEY, GEMINI_MODEL
 from app.services.llm.provider_interface import BaseLLMProvider, ProviderLLMResponse
 
 logger = logging.getLogger("better_me.gemini_provider")
@@ -12,38 +12,44 @@ logger = logging.getLogger("better_me.gemini_provider")
 class GeminiLLMProvider(BaseLLMProvider):
     """
     Google Gemini API Provider implementation via direct Google REST API.
-    Supports gemini-flash-latest, gemini-2.5-flash, etc. without external typing conflicts.
+    Supports gemini-flash-lite-latest, gemini-3.8-flash, etc. without external typing conflicts.
     """
 
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
         self.api_key = api_key or GEMINI_API_KEY
-        configured_model = model_name or LLM_MODEL_NAME or "gemini-3.1-flash-lite"
-        # Normalize model string for endpoint URI
-        if not configured_model.startswith("models/"):
-            self.model_uri = f"models/{configured_model}"
-            self.model_name = configured_model
+        configured_model = (model_name or GEMINI_MODEL or "").strip()
+        if configured_model:
+            if not configured_model.startswith("models/"):
+                self.model_uri = f"models/{configured_model}"
+                self.model_name = configured_model
+            else:
+                self.model_uri = configured_model
+                self.model_name = configured_model.replace("models/", "")
         else:
-            self.model_uri = configured_model
-            self.model_name = configured_model.replace("models/", "")
+            self.model_uri = None
+            self.model_name = ""
             
         logger.info(f"Initialized Gemini Provider with model '{self.model_name}' (URI: {self.model_uri})")
 
     def is_available(self) -> bool:
         return bool(self.api_key and self.api_key.strip())
 
-    def generate(self, prompt: str, system_instruction: str, temperature: float = 0.7, max_tokens: int = 512) -> ProviderLLMResponse:
+    def generate(self, prompt: str, system_instruction: str, temperature: float = 0.7, max_tokens: int = 512, **kwargs) -> ProviderLLMResponse:
         if not self.is_available():
             raise RuntimeError("Gemini LLM Provider is not available or API key missing.")
 
         start_time = time.time()
         
-        # Primary endpoint attempts (fallback chain across fast, quota-available models)
-        candidate_models = [
-            "models/gemini-2.5-flash",
-            "models/gemini-2.0-flash",
-            "models/gemini-1.5-flash",
-            "models/gemini-flash-latest"
-        ]
+        # Primary endpoint attempts (user model first, then verified quota-available fallback chain)
+        candidate_models = []
+        if self.model_uri:
+            candidate_models.append(self.model_uri)
+        candidate_models.extend([
+            "models/gemini-flash-lite-latest",
+            "models/gemini-3.8-flash",
+            "models/gemini-flash-latest",
+            "models/gemini-2.5-flash-lite"
+        ])
         # Remove duplicates while preserving order
         candidate_models = list(dict.fromkeys(candidate_models))
 

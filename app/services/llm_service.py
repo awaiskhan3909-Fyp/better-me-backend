@@ -3,7 +3,7 @@ import logging
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 
-from app.core.config import LLM_FALLBACK_ENABLED
+from app.core.config import LLM_FALLBACK_ENABLED, GEMINI_API_KEY, GEMINI_MODEL, LLM_PROVIDER
 from app.services.llm import (
     GeminiLLMProvider,
     prompt_builder,
@@ -18,11 +18,12 @@ logger = logging.getLogger("better_me.llm_service")
 
 
 def get_default_provider():
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    api_key = (GEMINI_API_KEY or os.getenv("GEMINI_API_KEY", "")).strip()
+    model = (GEMINI_MODEL or os.getenv("GEMINI_MODEL", "")).strip()
     if api_key:
-        logger.info("Using Google Gemini API Provider (Clinical Conversational Intelligence)")
-        return GeminiLLMProvider(api_key=api_key)
-    return GeminiLLMProvider()
+        logger.info(f"Using Google Gemini API Provider (Model: {model or 'default'})")
+        return GeminiLLMProvider(api_key=api_key, model_name=model or None)
+    return GeminiLLMProvider(model_name=model or None)
 
 
 class LLMResult(BaseModel):

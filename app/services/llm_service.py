@@ -117,7 +117,7 @@ class LLMService:
                 recent_history_str = None
                 if conversation_context and conversation_context.recent_messages:
                     history_turns = []
-                    for m in conversation_context.recent_messages[-4:]:
+                    for m in conversation_context.recent_messages[-10:]:
                         role = "Patient" if m.sender_type == "user" else "Better Me"
                         history_turns.append(f"{role}: {m.content}")
                     if history_turns:

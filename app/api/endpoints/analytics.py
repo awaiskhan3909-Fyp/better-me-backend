@@ -18,20 +18,29 @@ def get_user_dashboard_stats(
     db: Session = Depends(get_db)
 ):
     user_repo = UserRepository(db)
-    target_user_id = None
+    analytics_repo = AnalyticsRepository(db)
     if user_id:
         try:
             parsed_uuid = uuid.UUID(str(user_id))
             user = user_repo.get_by_id(parsed_uuid)
             if user:
-                target_user_id = user.id
+                return analytics_repo.get_dashboard_stats(user.id)
         except (ValueError, TypeError):
             pass
+        return DashboardStatsResponse(
+            user_name="User",
+            total_sessions=0,
+            avg_duration_minutes=0,
+            total_messages=0,
+            thoughts_analyzed=0,
+            categories_practiced=0,
+            current_risk_level="Safe",
+            primary_focus=[],
+            primary_goal=None,
+            distortions_breakdown={},
+            recent_sessions=[],
+            emotional_trends=[]
+        )
 
-    if not target_user_id:
-        demo_user = user_repo.get_or_create_default_user()
-        target_user_id = demo_user.id
-
-    analytics_repo = AnalyticsRepository(db)
-    stats = analytics_repo.get_dashboard_stats(target_user_id)
-    return stats
+    demo_user = user_repo.get_or_create_default_user()
+    return analytics_repo.get_dashboard_stats(demo_user.id)

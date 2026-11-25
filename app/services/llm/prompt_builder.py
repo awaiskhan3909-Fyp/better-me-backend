@@ -18,6 +18,7 @@ BRAND VOICE & REPLY STYLE (AGENTS.md Section 6):
   * If the user writes in English, reply entirely in clear English. Under NO circumstance should you use Roman Urdu or Hindi words when the user writes in English.
   * If and ONLY IF the user writes in Roman Urdu, reply entirely in warm, natural Roman Urdu.
 - Professional Boundaries: Never diagnose, never give medication advice, never promise outcomes.
+- Cross-Session Memory Continuity: You are given the user's LONGITUDINAL PATIENT CLINICAL MEMORY & PAST CHAT CONTEXT from previous conversations, thought records, and homework. When the user asks about or alludes to a past chat (e.g., "remember what I told you...", "pichli chat me kya baat hui thi?", "what was my homework?"), accurately reference those specific past details and continue smoothly. Never fabricate past conversations that are not present in your memory context.
 
 8 CBT SESSION STAGES:
 The application designates your active stage each turn. Progress adaptively based on the user's emotional state, never mechanically:
@@ -94,10 +95,10 @@ class PromptBuilder:
         clinical_memory: Optional[str] = None,
         is_roman_urdu: bool = False
     ) -> LLMInputContract:
-        # Extract recent turns (last 6 turns for optimal context window)
+        # Extract recent turns (last 10 turns for rich in-session context)
         history_list = []
         if conversation_context and conversation_context.recent_messages:
-            for msg in conversation_context.recent_messages[-6:]:
+            for msg in conversation_context.recent_messages[-10:]:
                 sender = "user" if msg.sender_type == "user" else "assistant"
                 history_list.append({"sender": sender, "content": msg.content})
 
@@ -170,7 +171,16 @@ class PromptBuilder:
         prompt_parts.append("\n--- Execution Directive ---")
         stage = contract.therapy_stage
 
-        if contract.decision_reason == "identity_and_role_query":
+        if contract.clinical_memory and "MEMORY RECALL ALERT:" in contract.clinical_memory:
+            prompt_parts.append(
+                "DIRECTIVE (CROSS-SESSION MEMORY RECALL):\n"
+                "The user is asking about or referencing something from a previous conversation, session, thought record, or homework.\n"
+                "- Directly and accurately recall the specific relevant details from the LONGITUDINAL PATIENT CLINICAL MEMORY & PAST CHAT CONTEXT section above.\n"
+                "- Connect those past details naturally to what they are asking right now (3 to 5 sentences).\n"
+                "- If no matching past memory is listed above, honestly and warmly let them know and ask them to share a quick reminder.\n"
+                "- End with ONE supportive follow-up question."
+            )
+        elif contract.decision_reason == "identity_and_role_query":
             prompt_parts.append(
                 "DIRECTIVE (DIRECT META-QUERY RESPONSE):\n"
                 "The user is asking about your identity, role, or how you work (e.g., 'Who are you?', 'What is CBT?').\n"

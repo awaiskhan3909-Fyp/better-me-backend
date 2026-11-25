@@ -102,15 +102,19 @@ class GeminiLLMProvider(BaseLLMProvider):
 
         contents = self._build_contents(prompt=prompt, recent_history=recent_history)
 
+        generation_config: Dict[str, Any] = {
+            "temperature": temperature,
+            "maxOutputTokens": max(max_tokens, 1024)
+        }
+        if "gemini-3" in model_slug or "gemini-2.5" in model_slug:
+            generation_config["thinkingConfig"] = {"thinkingBudget": 0}
+
         payload = {
             "contents": contents,
             "systemInstruction": {
                 "parts": [{"text": system_instruction}]
             },
-            "generationConfig": {
-                "temperature": temperature,
-                "maxOutputTokens": max_tokens
-            }
+            "generationConfig": generation_config
         }
 
         start_time = time.time()

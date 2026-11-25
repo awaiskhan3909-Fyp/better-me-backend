@@ -17,13 +17,24 @@ class UserRepository:
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         return self.hash_password(plain_password) == hashed_password
 
-    def create_user(self, email: str, password_hash: str, full_name: Optional[str] = None, role: str = "user", commit: bool = True) -> User:
-        user = User(
+    def create_user(
+        self,
+        email: str,
+        password_hash: str,
+        full_name: Optional[str] = None,
+        role: str = "user",
+        user_id: Optional[uuid.UUID] = None,
+        commit: bool = True
+    ) -> User:
+        user_kwargs = dict(
             email=email.strip().lower(),
             password_hash=password_hash,
             full_name=full_name.strip() if full_name else None,
             role=role
         )
+        if user_id is not None:
+            user_kwargs["id"] = user_id
+        user = User(**user_kwargs)
         self.db.add(user)
         if commit:
             self.db.commit()
@@ -31,6 +42,42 @@ class UserRepository:
         else:
             self.db.flush()
         return user
+
+    def upsert_supabase_user(
+        self,
+        email: str,
+        user_id: Optional[uuid.UUID] = None,
+        full_name: Optional[str] = None,
+        password_hash: Optional[str] = None,
+        commit: bool = True
+    ) -> User:
+        clean_email = email.strip().lower()
+        user = None
+        if user_id is not None:
+            user = self.get_by_id(user_id)
+        if not user:
+            user = self.get_by_email(clean_email)
+
+        if user:
+            changed = False
+            if password_hash and user.password_hash != password_hash:
+                user.password_hash = password_hash
+                changed = True
+            if full_name and full_name.strip() and not user.full_name:
+                user.full_name = full_name.strip()
+                changed = True
+            if changed and commit:
+                self.db.commit()
+                self.db.refresh(user)
+            return user
+
+        return self.create_user(
+            email=clean_email,
+            password_hash=password_hash or "supabase_managed",
+            full_name=full_name,
+            user_id=user_id,
+            commit=commit
+        )
 
     def get_by_id(self, user_id: uuid.UUID) -> Optional[User]:
         return self.db.query(User).filter(User.id == user_id).first()

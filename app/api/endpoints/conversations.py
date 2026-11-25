@@ -45,26 +45,24 @@ def list_user_conversations(
 ):
     """
     Retrieves all past conversations for a user, ordered by most recent.
-    Defaults to default user if user_id is omitted or invalid.
+    Strictly isolates per-account conversations (never leaks demo user's chats
+    when a specific user_id is supplied).
     """
     user_repo = UserRepository(db)
     conv_repo = ConversationRepository(db)
 
-    target_user_id = None
     if user_id:
         try:
             parsed_uuid = uuid.UUID(str(user_id))
-            user = user_repo.get_by_id(parsed_uuid)
-            if user:
-                target_user_id = user.id
         except (ValueError, TypeError):
-            pass
+            return []
+        user = user_repo.get_by_id(parsed_uuid)
+        if not user:
+            return []
+        return conv_repo.get_user_conversations(user.id)
 
-    if not target_user_id:
-        demo_user = user_repo.get_or_create_default_user()
-        target_user_id = demo_user.id
-
-    return conv_repo.get_user_conversations(target_user_id)
+    demo_user = user_repo.get_or_create_default_user()
+    return conv_repo.get_user_conversations(demo_user.id)
 
 
 @router.post("", response_model=ConversationResponse, status_code=status.HTTP_201_CREATED)

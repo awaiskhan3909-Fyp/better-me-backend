@@ -1,6 +1,7 @@
 import uuid
 import re
 import logging
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -138,11 +139,12 @@ class MessagePipeline:
             )
             decision: ResponseDecision = response_decision_service.evaluate_decision(decision_context)
 
-            # Step 4.5: Longitudinal Clinical Memory Context Extraction
+            # Step 4.5: Longitudinal Clinical & Cross-Session Memory Context Extraction
             clinical_memory_briefing = clinical_memory_service.build_clinical_memory_briefing(
                 user_id=conversation.user_id,
                 current_text=text,
-                db=db
+                db=db,
+                current_conversation_id=conversation_id
             )
 
             # Step 5: Route Response Strategy to Conversational LLM Service
@@ -324,8 +326,9 @@ class MessagePipeline:
                 commit=False
             )
 
-            # Step 9: Update Conversation current_risk_level
+            # Step 9: Update Conversation current_risk_level and updated_at timestamp
             conv_repo.update_risk_level(conversation_id, safety_pred.risk_level, commit=False)
+            conversation.updated_at = datetime.now(timezone.utc)
 
             # Step 10: Single atomic transaction commit
             db.commit()

@@ -10,6 +10,7 @@ class RegisterRequest(BaseModel):
     email: str = Field(..., description="User email address")
     password: str = Field(..., min_length=6, description="Password with minimum 6 characters")
     full_name: Optional[str] = Field(default=None, max_length=100)
+    user_id: Optional[uuid.UUID] = Field(default=None, description="Optional canonical Supabase Auth UUID")
 
 
 class LoginRequest(BaseModel):
@@ -22,6 +23,12 @@ class SyncPasswordRequest(BaseModel):
     password: str = Field(..., min_length=1)
     user_id: Optional[uuid.UUID] = None
     full_name: Optional[str] = None
+
+
+class SyncSessionRequest(BaseModel):
+    email: str = Field(..., description="Verified email address from Supabase Auth")
+    user_id: Optional[uuid.UUID] = Field(default=None, description="Supabase Auth user UUID")
+    full_name: Optional[str] = Field(default=None, max_length=100)
 
 
 class UserResponse(BaseModel):

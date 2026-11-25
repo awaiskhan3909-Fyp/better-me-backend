@@ -16,11 +16,18 @@ class Base(DeclarativeBase):
     pass
 
 
+# Normalize postgres:// / postgresql:// URLs to explicitly use installed psycopg2 driver (SQLAlchemy 2.1+ compatibility)
+_effective_db_url = DATABASE_URL
+if _effective_db_url.startswith("postgres://"):
+    _effective_db_url = _effective_db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+elif _effective_db_url.startswith("postgresql://"):
+    _effective_db_url = _effective_db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
 # Enable check_same_thread=False for SQLite local development compatibility
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+connect_args = {"check_same_thread": False} if _effective_db_url.startswith("sqlite") else {}
 
 engine = create_engine(
-    DATABASE_URL,
+    _effective_db_url,
     connect_args=connect_args,
     pool_pre_ping=True
 )

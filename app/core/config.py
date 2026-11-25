@@ -11,10 +11,6 @@ load_dotenv(BACKEND_DIR / ".env")
 load_dotenv(PROJECT_ROOT / ".env")
 
 LOCAL_MODELS_DIR = PROJECT_ROOT / "Models"
-if not LOCAL_MODELS_DIR.exists():
-    candidate = PROJECT_ROOT.parent / "Better Me-App-FYP" / "Models"
-    if candidate.exists():
-        LOCAL_MODELS_DIR = candidate
 
 DISTORTION_MODEL_DIR = LOCAL_MODELS_DIR / "Bert Model Training" / "bert_cognitive_distortions (Trained Model)"
 SAFETY_MODEL_PATH = LOCAL_MODELS_DIR / "Safety Classifier Model" / "bert_safety_classifier (Trained Model Files)" / "best_bert_safety_model.pt"
@@ -31,12 +27,15 @@ HF_TOKEN = os.getenv("HF_TOKEN", "")
 HF_DISTORTION_REPO = os.getenv("HF_DISTORTION_REPO", "awaiskhan4039/bert-cognitive-distortions")
 HF_SAFETY_REPO = os.getenv("HF_SAFETY_REPO", "awaiskhan4039/bert-safety-classifier")
 
-NER_MODEL_DIR = PROJECT_ROOT / "Models" / "NER Model Training" / "custom_ner_model"
-
 HOST = os.getenv("HOST", "127.0.0.1")
 PORT = int(os.getenv("PORT", 8000))
 APP_ENV = os.getenv("APP_ENV", "development")
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
+_raw_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"
+)
+ALLOWED_ORIGINS = [origin.strip().strip("'\"") for origin in _raw_origins.split(",") if origin.strip()]
+ALLOW_ORIGIN_REGEX = os.getenv("ALLOW_ORIGIN_REGEX", r"^https:\/\/.*\.vercel\.app$|^https:\/\/.*\.ngrok-free\.app$")
 
 # Database Configuration (Defaults to local SQLite, environment variable override for PostgreSQL)
 DEFAULT_SQLITE_PATH = BACKEND_DIR / "better_me.db"

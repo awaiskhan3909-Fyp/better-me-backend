@@ -28,6 +28,7 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
     full_name: Optional[str] = None
+    role: str = "user"
     is_active: bool = True
     has_completed_intake: bool = False
     created_at: datetime

@@ -17,11 +17,12 @@ class UserRepository:
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         return self.hash_password(plain_password) == hashed_password
 
-    def create_user(self, email: str, password_hash: str, full_name: Optional[str] = None, commit: bool = True) -> User:
+    def create_user(self, email: str, password_hash: str, full_name: Optional[str] = None, role: str = "user", commit: bool = True) -> User:
         user = User(
             email=email.strip().lower(),
             password_hash=password_hash,
-            full_name=full_name.strip() if full_name else None
+            full_name=full_name.strip() if full_name else None,
+            role=role
         )
         self.db.add(user)
         if commit:

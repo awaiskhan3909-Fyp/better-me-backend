@@ -166,15 +166,11 @@ class LLMService:
                         }
                     )
                 else:
-                    print(f"⚠️ [LLM VALIDATION NOTICE]: {failure_reason} for text: '{provider_resp.raw_content}'")
-                    logger.warning(f"LLM output validation failed: {failure_reason}. Executing fallback.")
+                    logger.warning(f"LLM output validation failed: {failure_reason} for text: '{provider_resp.raw_content}'. Executing fallback.")
                     fallback_reason = f"validation_failed ({failure_reason})"
 
             except Exception as e:
-                import traceback
-                print(f"❌ [LLM PROVIDER EXECUTION EXCEPTION]: {e}")
-                traceback.print_exc()
-                logger.error(f"LLM Provider execution exception: {e}. Executing fallback.")
+                logger.error(f"LLM Provider execution exception: {e}. Executing fallback.", exc_info=True)
                 fallback_reason = f"provider_error ({str(e)})"
         else:
             # Automatic intelligent fallback to Gemini if API key is present
@@ -182,7 +178,7 @@ class LLMService:
                 try:
                     gemini_fallback = GeminiLLMProvider(api_key=os.getenv("GEMINI_API_KEY").strip())
                     if gemini_fallback.is_available():
-                        print("✨ [INTELLIGENT FALLBACK] Generating with Google Gemini API...")
+                        logger.info("Generating with Google Gemini API fallback...")
                         gem_resp = gemini_fallback.generate(
                             prompt=prompt_text,
                             system_instruction=prompt_builder.system_instruction,
@@ -212,7 +208,7 @@ class LLMService:
                 except Exception as g_err:
                     logger.warning(f"Secondary Gemini attempt failed: {g_err}")
 
-            print("⚠️ [LLM PROVIDER NOTICE]: Provider is not available. Executing improved clinical fallback.")
+            logger.warning("Provider is not available. Executing improved clinical fallback.")
             fallback_reason = "provider_unavailable"
 
 

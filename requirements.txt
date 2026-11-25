@@ -8,8 +8,7 @@ alembic>=1.11.0
 psycopg2-binary>=2.9.0
 torch>=2.0.0
 transformers>=4.30.0
-spacy>=3.5.0
-google-genai>=2.0.0
 huggingface_hub>=0.20.0
-gradio>=4.0.0
+requests>=2.28.0
+reportlab>=4.0.0
 

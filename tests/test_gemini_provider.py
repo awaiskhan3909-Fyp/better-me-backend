@@ -98,3 +98,4 @@ def test_generate_retries_on_503_and_succeeds():
 
             assert mock_post.call_count == 2
             assert resp.raw_content == "Recovered after retry."
+

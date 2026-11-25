@@ -8,9 +8,10 @@ from app.db.repositories.user_repository import UserRepository
 from app.db.repositories.analytics_repository import AnalyticsRepository
 from app.schemas.auth import DashboardStatsResponse
 
-router = APIRouter(prefix="/dashboard", tags=["Dashboard & Analytics"])
+router = APIRouter(tags=["Dashboard & Analytics"])
 
 
+@router.get("/dashboard/stats", response_model=DashboardStatsResponse)
 @router.get("/stats", response_model=DashboardStatsResponse)
 def get_user_dashboard_stats(
     user_id: Optional[str] = Query(default=None, description="User UUID to fetch stats for."),

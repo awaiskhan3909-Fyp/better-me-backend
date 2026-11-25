@@ -2,8 +2,11 @@ import io
 import os
 import uuid
 import re
+import logging
 from datetime import datetime
 from typing import Optional, Dict, Any, List, Tuple
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy.orm import Session
 from reportlab.lib.pagesizes import A4
@@ -116,7 +119,7 @@ class PDFReportService:
 
             self.fonts_registered = True
         except Exception as e:
-            print(f"[WARNING] Font registration notice: {e}")
+            logger.warning(f"Font registration notice: {e}")
             self.fonts_registered = False
 
     def _get_styles(self):

@@ -1,9 +1,12 @@
 import json
+import logging
 import torch
 from pathlib import Path
 from transformers import AutoTokenizer, BertForSequenceClassification
 from app.core.config import DISTORTION_MODEL_DIR, HF_DISTORTION_REPO
 from app.schemas.response import DistortionPrediction
+
+logger = logging.getLogger(__name__)
 
 
 CANONICAL_DISTORTIONS = {
@@ -47,7 +50,7 @@ class DistortionService:
                 break
 
         if found_drive_path:
-            print(f"📁 [DRIVE DETECTED] Found Cognitive Distortion model in Google Drive: {found_drive_path}")
+            logger.info(f"Found Cognitive Distortion model in Google Drive: {found_drive_path}")
             model_source = str(found_drive_path)
         elif model_dir.exists():
             model_source = str(model_dir)
@@ -55,7 +58,7 @@ class DistortionService:
             model_source = HF_DISTORTION_REPO
 
         try:
-            print(f"[INFO] Loading Cognitive Distortion BERT model & tokenizer from: {model_source}...")
+            logger.info(f"Loading Cognitive Distortion BERT model & tokenizer from: {model_source}...")
             self.tokenizer = AutoTokenizer.from_pretrained(model_source)
             self.model = BertForSequenceClassification.from_pretrained(model_source)
             self.model.to(self.device)
@@ -92,9 +95,9 @@ class DistortionService:
                 self.label_map = CANONICAL_DISTORTIONS.copy()
 
             self.loaded = True
-            print(f"[SUCCESS] Cognitive Distortion BERT model loaded! Active classes: {list(self.label_map.values())}")
+            logger.info(f"Cognitive Distortion BERT model loaded! Active classes: {list(self.label_map.values())}")
         except Exception as e:
-            print(f"[ERROR] Error loading Cognitive Distortion model: {e}")
+            logger.error(f"Error loading Cognitive Distortion model: {e}")
 
     def predict(self, text: str) -> DistortionPrediction:
         if not self.loaded:

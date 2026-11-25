@@ -1,8 +1,11 @@
 import json
 import re
+import logging
 from typing import Dict, Any, List, Optional
 from app.core.config import CBT_TEMPLATES_DIR
 from app.schemas.response import CBTGuidance
+
+logger = logging.getLogger(__name__)
 
 
 class CBTService:
@@ -25,18 +28,18 @@ class CBTService:
             "Fortune Telling": "cbt_fortune_telling_templates.json",
         }
 
-        print("[INFO] Loading CBT JSON templates...")
+        logger.info("Loading CBT JSON templates...")
         for distortion, filename in file_mapping.items():
             file_path = CBT_TEMPLATES_DIR / filename
             if file_path.exists():
                 try:
                     with open(file_path, "r", encoding="utf-8") as f:
                         self.templates_db[distortion] = json.load(f)
-                    print(f"  [LOADED] {distortion} ({len(self.templates_db[distortion].get('templates', []))} templates)")
+                    logger.info(f"Loaded CBT templates for {distortion} ({len(self.templates_db[distortion].get('templates', []))} templates)")
                 except Exception as e:
-                    print(f"  [ERROR] Failed to load {filename}: {e}")
+                    logger.error(f"Failed to load CBT template {filename}: {e}")
             else:
-                print(f"  [WARNING] Template file not found: {file_path}")
+                logger.warning(f"CBT template file not found: {file_path}")
 
         self.loaded = True
 

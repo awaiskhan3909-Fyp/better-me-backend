@@ -22,7 +22,7 @@ class ClinicalMemoryService:
     TRIGGER_KEYWORDS = {
         "Academic & Exams": ["exam", "test", "quiz", "grade", "gpa", "study", "studying", "marks", "fail", "failed", "assignment", "deadline", "university", "college"],
         "Career & Workplace": ["job", "interview", "boss", "work", "office", "career", "promotion", "resume", "colleague"],
-        "Social & Relationships": ["friend", "friends", "partner", "relationship", "breakup", "lonely", "rejected", "rejection", "ignoring", "family", "parents"],
+        "Social & Relationships": ["friend", "friends", "partner", "relationship", "breakup", "lonely", "rejected", "rejection", "ignoring", "family", "parents", "brother", "sister", "sibling", "siblings", "mother", "father", "mom", "dad"],
         "Health & Somatic": ["sleep", "insomnia", "tired", "exhausted", "headache", "panic", "heartbeat", "health", "sick"],
         "Self-Worth & Performance": ["failure", "useless", "worthless", "mistake", "not good enough", "loser", "perfectionist"]
     }
@@ -157,7 +157,7 @@ class ClinicalMemoryService:
         # Find episode matching current keywords
         for ep in episodes:
             ep_words = re.findall(r"\w+", ep.situation_context.lower())
-            overlap = [w for w in ep_words if len(w) > 4 and w in current_lower]
+            overlap = [w for w in ep_words if len(w) >= 4 and w in current_lower]
             if overlap:
                 relevant_episode = ep
                 break

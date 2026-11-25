@@ -1,10 +1,13 @@
 import os
 import re
+import logging
 import torch
 from pathlib import Path
 from transformers import BertConfig, BertForSequenceClassification, AutoTokenizer
 from app.core.config import SAFETY_MODEL_PATH, DISTORTION_MODEL_DIR, HF_SAFETY_REPO
 from app.schemas.response import SafetyPrediction
+
+logger = logging.getLogger(__name__)
 
 
 class SafetyService:
@@ -59,7 +62,7 @@ class SafetyService:
         distortion_dir = Path(DISTORTION_MODEL_DIR)
 
         try:
-            print("[INFO] Loading Safety Classifier BERT model & tokenizer...")
+            logger.info("Loading Safety Classifier BERT model & tokenizer...")
             # Check Google Drive distortion path for local tokenizer & config to avoid Hugging Face calls
             env_dist_path = os.getenv("BERT_DISTORTION_PATH")
             possible_tokenizer_paths = [
@@ -76,7 +79,7 @@ class SafetyService:
                     break
 
             tokenizer_source = local_tokenizer_source or "bert-base-uncased"
-            print(f"[INFO] Loading Safety Tokenizer from: {tokenizer_source}")
+            logger.info(f"Loading Safety Tokenizer from: {tokenizer_source}")
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_source)
             try:
                 config = BertConfig.from_pretrained(tokenizer_source, num_labels=len(self.label_names))
@@ -101,13 +104,13 @@ class SafetyService:
                     break
 
             if found_safety_path:
-                print(f"📁 [DRIVE DETECTED] Found Safety Classifier model in Google Drive: {found_safety_path}")
+                logger.info(f"Found Safety Classifier model in Google Drive: {found_safety_path}")
                 actual_weights_path = str(found_safety_path)
             elif model_path.exists():
                 actual_weights_path = str(model_path)
             else:
                 from huggingface_hub import hf_hub_download
-                print(f"[INFO] Downloading Safety weights from {HF_SAFETY_REPO}...")
+                logger.info(f"Downloading Safety weights from {HF_SAFETY_REPO}...")
                 actual_weights_path = hf_hub_download(repo_id=HF_SAFETY_REPO, filename="best_bert_safety_model.pt")
 
             state_dict = torch.load(actual_weights_path, map_location=self.device)
@@ -125,9 +128,9 @@ class SafetyService:
             gc.collect()
 
             self.loaded = True
-            print("[SUCCESS] Safety Classifier BERT model loaded successfully!")
+            logger.info("Safety Classifier BERT model loaded successfully!")
         except Exception as e:
-            print(f"[ERROR] Error loading Safety model: {e}")
+            logger.error(f"Error loading Safety model: {e}")
 
     def predict(self, text: str, is_vernacular_crisis: bool = False) -> SafetyPrediction:
         clean_text = text.strip() if text else ""

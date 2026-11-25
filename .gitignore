@@ -8,3 +8,7 @@ better_me.db
 .env.txt
 scratch/
 tests_phase6.py
+venv/
+.venv/
+env/
+.pytest_cache/

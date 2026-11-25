@@ -39,10 +39,6 @@ class ModelBenchmarkStats(BaseModel):
     safety_model_name: Optional[str] = "BERT Safety Classifier"
     distortion_model_name: Optional[str] = "BERT Cognitive Distortions"
     ner_model_name: Optional[str] = "Contextual Emotional NER"
-    safety_model_accuracy: Optional[str] = None
-    distortion_model_accuracy: Optional[str] = None
-    ner_model_accuracy: Optional[str] = None
-    cbt_model_accuracy: Optional[str] = None
     cbt_model_name: Optional[str] = None
 
 

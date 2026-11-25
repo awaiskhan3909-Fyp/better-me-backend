@@ -1,4 +1,5 @@
 import uuid
+import logging
 from typing import List, Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -18,6 +19,8 @@ from app.schemas.cbt_exercise import (
     CBTExerciseCategoryProgress
 )
 from app.services.clinical_memory_service import clinical_memory_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/cbt-exercises", tags=["CBT Practice Exercises"])
 
@@ -107,7 +110,7 @@ def submit_cbt_exercise(
         profile.dominant_distortions = dist_map
         profile.updated_at = now
     except Exception as e:
-        print(f"[WARNING] Clinical memory synchronization notice: {e}")
+        logger.warning(f"Clinical memory synchronization notice: {e}")
 
     db.commit()
     db.refresh(record)

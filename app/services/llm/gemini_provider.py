@@ -122,10 +122,8 @@ class GeminiLLMProvider(BaseLLMProvider):
             endpoint_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_slug}:generateContent"
             generation_config: Dict[str, Any] = {
                 "temperature": temperature,
-                "maxOutputTokens": max(max_tokens, 1024)
+                "maxOutputTokens": max(max_tokens, 2048)
             }
-            if "gemini-3" in model_slug or "gemini-2.5" in model_slug:
-                generation_config["thinkingConfig"] = {"thinkingBudget": 0}
 
             payload = {
                 "contents": contents,
@@ -141,7 +139,9 @@ class GeminiLLMProvider(BaseLLMProvider):
                     data = resp.json()
                     candidates = data.get("candidates", [])
                     parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
-                    raw_text_check = parts[0].get("text", "").strip() if parts else ""
+                    # Extract non-thought text part cleanly (handles both standard and thinking models)
+                    text_parts = [p.get("text", "") for p in parts if p.get("text") and not p.get("thought")]
+                    raw_text_check = "\n".join(text_parts).strip() if text_parts else (parts[0].get("text", "").strip() if parts else "")
                     if raw_text_check:
                         response_json = data
                         used_model = model_slug
@@ -150,7 +150,7 @@ class GeminiLLMProvider(BaseLLMProvider):
                     logger.warning(f"Gemini model '{model_slug}' returned empty text; failing over to next model.")
                     continue
 
-                if resp.status_code in (429, 404, 500, 502, 503, 504):
+                if resp.status_code in (400, 429, 404, 500, 502, 503, 504):
                     logger.warning(
                         f"Gemini API returned status {resp.status_code} for '{model_slug}': {resp.text[:160]}. Failing over to next model..."
                     )
@@ -180,7 +180,8 @@ class GeminiLLMProvider(BaseLLMProvider):
             if not content_parts:
                 raise ValueError("Gemini API candidate content parts empty.")
 
-            raw_text = content_parts[0].get("text", "").strip()
+            text_parts = [p.get("text", "") for p in content_parts if p.get("text") and not p.get("thought")]
+            raw_text = "\n".join(text_parts).strip() if text_parts else content_parts[0].get("text", "").strip()
             if not raw_text:
                 raise ValueError("Gemini API generated empty text.")
 

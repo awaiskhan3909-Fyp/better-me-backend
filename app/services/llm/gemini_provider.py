@@ -72,6 +72,14 @@ class GeminiLLMProvider(BaseLLMProvider):
 
         return contents
 
+    FALLBACK_MODELS = [
+        "gemini-3.5-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.6-flash",
+        "gemini-3.1-flash-lite",
+        "gemini-3-flash-preview",
+    ]
+
     def generate(
         self,
         prompt: str,
@@ -88,68 +96,78 @@ class GeminiLLMProvider(BaseLLMProvider):
         if not self.is_available():
             raise RuntimeError("Gemini LLM Provider is not available or API key missing.")
 
-        model_slug = (self.model_name or GEMINI_MODEL or "").strip()
-        if not model_slug:
-            raise RuntimeError("GEMINI_MODEL is not set in environment or configuration.")
-        if model_slug.startswith("models/"):
-            model_slug = model_slug.replace("models/", "")
+        primary_slug = (self.model_name or GEMINI_MODEL or "gemini-3.5-flash").strip()
+        if primary_slug.startswith("models/"):
+            primary_slug = primary_slug.replace("models/", "")
 
-        endpoint_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_slug}:generateContent"
+        # Build deduplicated ordered failover chain so 429/503 on one model fails over immediately
+        candidate_models: List[str] = []
+        for m in [primary_slug, *self.FALLBACK_MODELS]:
+            clean_m = m.replace("models/", "").strip()
+            if clean_m and clean_m not in candidate_models:
+                candidate_models.append(clean_m)
+
         headers = {
             "Content-Type": "application/json",
             "x-goog-api-key": self.api_key
         }
-
         contents = self._build_contents(prompt=prompt, recent_history=recent_history)
-
-        generation_config: Dict[str, Any] = {
-            "temperature": temperature,
-            "maxOutputTokens": max(max_tokens, 1024)
-        }
-        if "gemini-3" in model_slug or "gemini-2.5" in model_slug:
-            generation_config["thinkingConfig"] = {"thinkingBudget": 0}
-
-        payload = {
-            "contents": contents,
-            "systemInstruction": {
-                "parts": [{"text": system_instruction}]
-            },
-            "generationConfig": generation_config
-        }
 
         start_time = time.time()
         response_json = None
+        used_model = primary_slug
         last_exception = None
 
-        # Execute request with 12s timeout and single retry on 429/5xx
-        for attempt in range(2):
+        for model_slug in candidate_models:
+            endpoint_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_slug}:generateContent"
+            generation_config: Dict[str, Any] = {
+                "temperature": temperature,
+                "maxOutputTokens": max(max_tokens, 1024)
+            }
+            if "gemini-3" in model_slug or "gemini-2.5" in model_slug:
+                generation_config["thinkingConfig"] = {"thinkingBudget": 0}
+
+            payload = {
+                "contents": contents,
+                "systemInstruction": {
+                    "parts": [{"text": system_instruction}]
+                },
+                "generationConfig": generation_config
+            }
+
             try:
                 resp = requests.post(endpoint_url, headers=headers, json=payload, timeout=12)
                 if resp.status_code == 200:
-                    response_json = resp.json()
-                    break
-
-                if resp.status_code in (429, 500, 502, 503, 504) and attempt == 0:
-                    logger.warning(
-                        f"Gemini API returned retryable status {resp.status_code} for '{model_slug}'. Retrying once in 1s..."
-                    )
-                    time.sleep(1.0)
+                    data = resp.json()
+                    candidates = data.get("candidates", [])
+                    parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
+                    raw_text_check = parts[0].get("text", "").strip() if parts else ""
+                    if raw_text_check:
+                        response_json = data
+                        used_model = model_slug
+                        break
+                    last_exception = ValueError(f"Empty candidate text from '{model_slug}'")
+                    logger.warning(f"Gemini model '{model_slug}' returned empty text; failing over to next model.")
                     continue
 
-                logger.warning(f"Gemini API returned status {resp.status_code}: {resp.text[:200]}")
-                last_exception = RuntimeError(f"HTTP {resp.status_code}: {resp.text[:200]}")
+                if resp.status_code in (429, 404, 500, 502, 503, 504):
+                    logger.warning(
+                        f"Gemini API returned status {resp.status_code} for '{model_slug}': {resp.text[:160]}. Failing over to next model..."
+                    )
+                    last_exception = RuntimeError(f"HTTP {resp.status_code} ({model_slug}): {resp.text[:200]}")
+                    continue
+
+                logger.warning(f"Gemini API returned non-retryable status {resp.status_code}: {resp.text[:200]}")
+                last_exception = RuntimeError(f"HTTP {resp.status_code} ({model_slug}): {resp.text[:200]}")
                 break
 
             except requests.RequestException as e:
-                if attempt == 0:
-                    logger.warning(f"Gemini API request exception ({e}). Retrying once in 1s...")
-                    time.sleep(1.0)
-                    continue
+                logger.warning(f"Gemini API request exception for '{model_slug}' ({e}). Failing over to next model...")
                 last_exception = e
-                break
+                continue
 
         if not response_json:
-            raise RuntimeError(f"Gemini API call failed for model '{model_slug}': {last_exception}")
+            raise RuntimeError(f"Gemini API call failed across models {candidate_models}: {last_exception}")
 
         latency_ms = round((time.time() - start_time) * 1000, 2)
 
@@ -175,7 +193,7 @@ class GeminiLLMProvider(BaseLLMProvider):
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
                 latency_ms=latency_ms,
-                model_name=model_slug,
+                model_name=used_model,
                 provider_name="google_gemini"
             )
 

@@ -348,8 +348,9 @@ class MessagePipeline:
                     reframe_text=ai_message_content,
                     db=db
                 )
-            except Exception:
-                pass
+            except Exception as mem_err:
+                logger.warning(f"Clinical memory update warning: {mem_err}")
+                db.rollback()
 
         except Exception as e:
             db.rollback()
